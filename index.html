@@ -82,8 +82,8 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 .ev-cd   { font-size:11px; font-weight:600; color:var(--green); }
 .ev-cd.past  { color:var(--dim); }
 .ev-cd.today { color:var(--gold); }
-.ev-right { flex-shrink:0; text-align:right; min-width:52px; }
-.ev-turns { font-size:9px; color:var(--muted); text-transform:uppercase; }
+.ev-right { flex-shrink:0; text-align:center; min-width:58px; }
+.ev-turns { font-size:10px; color:var(--gold); text-transform:uppercase; letter-spacing:.05em; font-weight:700; text-align:center; }
 .ev-age  { font-size:26px; font-weight:700; color:var(--text); line-height:1; }
 .ev-dnum { font-size:24px; font-weight:700; line-height:1; color:var(--text); }
 .ev-dlbl { font-size:9px; color:var(--dim); text-transform:uppercase; }
@@ -726,7 +726,7 @@ function render() {
   var html='';
   for(var mi=0;mi<monthOrder.length;mi++){
     var mg=months[monthOrder[mi]];
-    html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class=\"mcopy-btn\" onclick=\"copyMonth(\'+mg.y+\',\'+mg.m+\',this)\">\u2a47</button></div>';
+        html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class="mcopy-btn" onclick="copyMonth('+mg.y+','+mg.m+',this)">⧉</button></div>';
     for(var ii=0;ii<mg.items.length;ii++){
       var item=mg.items[ii],e=item.ev,d=item.date,cat=getCat(e.category);
       var isToday=d.getTime()===now.getTime();
@@ -737,7 +737,7 @@ function render() {
       var cdText=isToday?'🎉 Today':diff>0?diff+' day'+(diff>1?'s':'')+' left':Math.abs(diff)+' day'+(Math.abs(diff)>1?'s':'')+' ago';
       var rightHtml='';
       if(e.birthYear){
-        var yrs2=d.getFullYear()-parseInt(e.birthYear);
+        var yrs2=mg.y-parseInt(e.birthYear);
         var lbl2=e.category==='anniversary'?'years':'turns';
         rightHtml='<div class="ev-right"><div class="ev-turns">'+lbl2+'</div><div class="ev-age">'+yrs2+'</div></div>';
       }
