@@ -668,10 +668,15 @@ function buildCatStrip() {
 
 function setTime(t) {
   timeFilter=t;
+  // Close calendar view if open
+  var cv=document.getElementById('calView'); var el=document.getElementById('eventList');
+  if(cv&&cv.style.display!=='none'){ cv.style.display='none'; if(el) el.style.display=''; var ct=document.getElementById('calTab'); if(ct) ct.classList.remove('on'); }
   document.querySelectorAll('#timeBar .ftab').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===t);});
   render();
 }
 function setCat(c) {
+  var cv=document.getElementById('calView'); var el=document.getElementById('eventList');
+  if(cv&&cv.style.display!=='none'){ cv.style.display='none'; if(el) el.style.display=''; var ct=document.getElementById('calTab'); if(ct) ct.classList.remove('on'); }
   catFilter=c;
   document.querySelectorAll('#catStrip .cstab').forEach(function(b){
     var isOn=b.getAttribute('data-c')===c, cat=getCat(b.getAttribute('data-c'));
@@ -817,6 +822,7 @@ function fmtTime(t){if(!t)return'';var p=t.split(':'),h=parseInt(p[0]);return(h%
 
 function render() {
   var list=document.getElementById('eventList');
+  if(list) list.style.display=''; // ensure visible
   var now=today0(), items=getFiltered();
   if(!items.length){list.innerHTML='<div class="empty"><div class="empty-icon">🌙</div>No events found.</div>';return;}
   var months={},monthOrder=[];
