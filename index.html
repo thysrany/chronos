@@ -22,15 +22,14 @@ body.theme-forest { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --bg4:#1c3020; -
 body { background: var(--bg); color: var(--text); }
 
 /* ── SPLASH ── */
-#splash { position:fixed; inset:0; z-index:999; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:1.5rem; transition:opacity 0.7s; overflow:hidden; }
+#splash { position:fixed; inset:0; z-index:999; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:2rem; transition:opacity 0.7s; }
 #splash.hidden { opacity:0; pointer-events:none; }
-.sp-logo { width:56px; height:56px; border-radius:50%; display:block; flex-shrink:0; }
-.sp-name { font-family:'Open Sans',sans-serif; font-size:17px; font-weight:700; color:var(--gold); text-align:center; }
-.sp-dot { font-size:12px; color:var(--muted); }
-.sp-line { width:32px; height:1px; background:var(--gold); opacity:0.4; }
-.sp-quote { font-family:'Cormorant Garamond',serif; font-size:18px; font-style:italic; font-weight:300; line-height:1.5; color:var(--text); text-align:center; max-width:300px; }
-.sp-author { font-size:11px; letter-spacing:.15em; color:var(--gold); text-transform:uppercase; text-align:center; }
-.sp-btns { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:4px; }
+.sp-name { font-size:22px; font-weight:700; color:var(--gold); text-align:center; }
+.sp-sub { font-size:12px; color:var(--muted); letter-spacing:2px; }
+.sp-line { width:40px; height:1px; background:var(--gold); opacity:0.5; margin:4px 0; }
+.sp-quote { font-family:'Cormorant Garamond',serif; font-size:19px; font-style:italic; line-height:1.5; color:var(--text); text-align:center; max-width:280px; }
+.sp-author { font-size:11px; letter-spacing:.15em; color:var(--gold); text-transform:uppercase; }
+.sp-btns { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:8px; }
 .btn-ghost { padding:9px 18px; border-radius:40px; border:1px solid var(--border); background:transparent; color:var(--muted); font-family:'Open Sans',sans-serif; font-size:13px; cursor:pointer; }
 .btn-ghost:hover { border-color:var(--gold); color:var(--gold); }
 .btn-gold { padding:10px 32px; border-radius:40px; border:1px solid var(--gold); background:rgba(201,168,76,.12); color:var(--gold); font-family:'Open Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer; }
@@ -147,17 +146,8 @@ body { background: var(--bg); color: var(--text); }
 
 <!-- SPLASH -->
 <div id="splash">
-  <svg class="sp-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-    <circle cx="50" cy="50" r="50" fill="#0f0c29"/>
-    <circle cx="50" cy="50" r="47" fill="none" stroke="#f59e0b" stroke-width="1.5" opacity="0.6"/>
-    <circle cx="50" cy="46" r="25" fill="#e2e8f0"/>
-    <circle cx="61" cy="42" r="22" fill="#0f0c29"/>
-    <circle cx="37" cy="26" r="2" fill="#fde68a"/>
-    <circle cx="77" cy="33" r="2.5" fill="#fde68a" opacity="0.9"/>
-    <circle cx="20" cy="40" r="1" fill="#ffffff" opacity="0.5"/>
-    <circle cx="70" cy="20" r="1" fill="#ffffff" opacity="0.4"/>
-  </svg>
-  <div class="sp-name">ChronosCalendar<span class="sp-dot">.app</span></div>
+  <div class="sp-name">🌙 ChronosCalendar</div>
+  <div class="sp-sub">.app</div>
   <div class="sp-line"></div>
   <div class="sp-quote" id="sqText"></div>
   <div class="sp-author" id="sqAuthor"></div>
