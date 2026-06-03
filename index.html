@@ -6,6 +6,7 @@
 <title>ChronosCalendar.app</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%230f0c29'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='35%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23cbd5e1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='200' cy='200' r='200' fill='url(%23a)'/%3E%3Ccircle cx='200' cy='200' r='185' fill='none' stroke='%23f59e0b' stroke-width='6' opacity='0.6'/%3E%3Ccircle cx='200' cy='185' r='100' fill='url(%23b)'/%3E%3Ccircle cx='245' cy='168' r='88' fill='url(%23a)'/%3E%3Ccircle cx='148' cy='103' r='8' fill='%23fde68a'/%3E%3Ccircle cx='310' cy='130' r='9' fill='%23fde68a' opacity='0.9'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%230f0c29'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='35%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23cbd5e1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='200' cy='200' r='200' fill='url(%23a)'/%3E%3Ccircle cx='200' cy='200' r='185' fill='none' stroke='%23f59e0b' stroke-width='6' opacity='0.6'/%3E%3Ccircle cx='200' cy='185' r='100' fill='url(%23b)'/%3E%3Ccircle cx='245' cy='168' r='88' fill='url(%23a)'/%3E%3Ccircle cx='148' cy='103' r='8' fill='%23fde68a'/%3E%3Ccircle cx='310' cy='130' r='9' fill='%23fde68a' opacity='0.9'/%3E%3C/svg%3E">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
@@ -916,24 +917,33 @@ var _token = null;
     return token;
   }
 
-  function doSignIn(){
-    if(typeof google==='undefined'||!google.accounts){ showToast('Sign-in loading...'); return; }
-    if(!_tokenClient){
-      _tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: 'profile email https://www.googleapis.com/auth/datastore',
-        callback: function(resp){
-          if(resp.error){ showToast('Sign-in failed'); return; }
-          fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{'Authorization':'Bearer '+resp.access_token}})
-            .then(function(r){return r.json();}).then(function(info){
-              var ui={uid:info.sub,email:info.email,displayName:info.name,photoURL:info.picture};
-              applyToken(resp,ui);
+  function initTokenClient(){
+    if(_tokenClient) return;
+    _tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: 'profile email https://www.googleapis.com/auth/datastore',
+      callback: function(resp){
+        if(resp.error){ showToast('Sign-in failed'); return; }
+        fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{'Authorization':'Bearer '+resp.access_token}})
+          .then(function(r){return r.json();}).then(function(info){
+            var ui={uid:info.sub,email:info.email,displayName:info.name,photoURL:info.picture};
+            applyToken(resp,ui);
+            if(!document.getElementById('app').classList.contains('show')){
               onSignedIn();
-              loadFromFirestore();
-            });
-        }
-      });
+            }
+            loadFromFirestore();
+          });
+      }
+    });
+  }
+
+  function doSignIn(){
+    if(typeof google==='undefined'||!google.accounts){
+      // GIS not ready yet — wait and retry
+      setTimeout(function(){ doSignIn(); }, 500);
+      return;
     }
+    initTokenClient();
     _tokenClient.requestAccessToken({prompt:''});
   }
 
@@ -1046,20 +1056,25 @@ var _token = null;
       _user  = {name:saved.name, email:saved.email, photo:saved.photo};
       var remaining = saved.tokenExpiry ? Math.floor((saved.tokenExpiry-Date.now())/1000) : 3600;
       // Load GIS and schedule refresh silently
-      var s=document.createElement('script');
-      s.src='https://accounts.google.com/gsi/client';
-      s.onload=function(){
-        _tokenClient=google.accounts.oauth2.initTokenClient({
-          client_id:CLIENT_ID,
-          scope:'profile email https://www.googleapis.com/auth/datastore',
-          callback:function(resp){
-            if(resp.error) return;
-            applyToken(resp,{uid:saved.uid,email:saved.email,displayName:saved.name,photoURL:saved.photo});
+      // GIS already loaded via <script> tag in head
+      function tryInitForRefresh(){
+        if(typeof google!=='undefined'&&google.accounts){
+          if(!_tokenClient){
+            _tokenClient=google.accounts.oauth2.initTokenClient({
+              client_id:CLIENT_ID,
+              scope:'profile email https://www.googleapis.com/auth/datastore',
+              callback:function(resp){
+                if(resp.error) return;
+                applyToken(resp,{uid:saved.uid,email:saved.email,displayName:saved.name,photoURL:saved.photo});
+              }
+            });
           }
-        });
-        scheduleTokenRefresh(remaining);
-      };
-      document.head.appendChild(s);
+          scheduleTokenRefresh(remaining);
+        } else {
+          setTimeout(tryInitForRefresh, 300);
+        }
+      }
+      tryInitForRefresh();
       onSignedIn();
       loadFromFirestore();
     } else {
@@ -1187,6 +1202,7 @@ if (!window._fbUser) {
 <title>ChronosCalendar.app</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%230f0c29'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='35%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23cbd5e1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='200' cy='200' r='200' fill='url(%23a)'/%3E%3Ccircle cx='200' cy='200' r='185' fill='none' stroke='%23f59e0b' stroke-width='6' opacity='0.6'/%3E%3Ccircle cx='200' cy='185' r='100' fill='url(%23b)'/%3E%3Ccircle cx='245' cy='168' r='88' fill='url(%23a)'/%3E%3Ccircle cx='148' cy='103' r='8' fill='%23fde68a'/%3E%3Ccircle cx='310' cy='130' r='9' fill='%23fde68a' opacity='0.9'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%230f0c29'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='35%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23cbd5e1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='200' cy='200' r='200' fill='url(%23a)'/%3E%3Ccircle cx='200' cy='200' r='185' fill='none' stroke='%23f59e0b' stroke-width='6' opacity='0.6'/%3E%3Ccircle cx='200' cy='185' r='100' fill='url(%23b)'/%3E%3Ccircle cx='245' cy='168' r='88' fill='url(%23a)'/%3E%3Ccircle cx='148' cy='103' r='8' fill='%23fde68a'/%3E%3Ccircle cx='310' cy='130' r='9' fill='%23fde68a' opacity='0.9'/%3E%3C/svg%3E">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
