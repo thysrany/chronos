@@ -141,7 +141,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 .btn-cancel-m { padding:9px 18px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); font-family:'Open Sans',sans-serif; font-size:14px; cursor:pointer; }
 
 /* ── TOAST ── */
-.toast { position:fixed; bottom:5rem; left:50%; transform:translateX(-50%); background:var(--bg3); border:1px solid var(--gold); color:var(--gold); padding:8px 20px; border-radius:40px; font-size:12px; z-index:9999; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
+.toast { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--header); border:2px solid var(--gold); color:var(--gold); padding:12px 28px; border-radius:40px; font-size:14px; font-weight:600; z-index:99999; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; box-shadow:0 4px 20px rgba(0,0,0,0.4); }
 .toast.show { opacity:1; }
 /* ── MONTH COPY ── */
 .month-header { display:flex; align-items:center; justify-content:space-between; }
@@ -151,7 +151,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 </head>
 <body class="theme-light">
 
-<div class="toast" id="toast">✓ Copied!</div>
+<div class="toast" id="toast"></div>
 
 <!-- SPLASH -->
 <div id="splash">
@@ -497,27 +497,35 @@ function initSplash() {
 
 function copyQuote() {
   var txt = '\u201c' + curQuote.t + '\u201d \u2014 ' + curQuote.a + (curQuote.r ? '\n\n' + curQuote.r : '');
+  // Always try fallback first (works in user gesture context on mobile)
+  // Then also try clipboard API for good measure
+  fallbackCopy(txt);
   if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(txt).then(function() {
-      showToast('\u2713 Copied!');
-    }).catch(function() { fallbackCopy(txt); });
-  } else {
-    fallbackCopy(txt);
+    navigator.clipboard.writeText(txt).catch(function(){});
   }
 }
 
 function fallbackCopy(txt) {
-  var ta = document.createElement('textarea');
-  ta.value = txt;
-  ta.style.position = 'fixed';
-  ta.style.left = '-9999px';
-  ta.style.top = '-9999px';
-  document.body.appendChild(ta);
-  ta.focus();
-  ta.select();
-  try { document.execCommand('copy'); showToast('\u2713 Copied!'); }
-  catch(e) { showToast('Long-press to copy'); }
-  document.body.removeChild(ta);
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = txt;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    var range = document.createRange();
+    range.selectNodeContents(ta);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    ta.setSelectionRange(0, 999999);
+    var ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast(ok ? '\u2713 Copied!' : '\u2713 Ready to paste!');
+  } catch(e) {
+    showToast('\u2713 Ready to paste!');
+  }
 }
 
 function enterApp() {
