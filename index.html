@@ -235,8 +235,8 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
         <div><label class="flabel">Time (optional)</label><input class="finput" id="mTime" type="time" /></div>
       </div>
       <div id="byr-row">
-        <label class="flabel">Birth Year (optional — shows age)</label>
-        <input class="finput" id="mBYear" type="number" placeholder="e.g. 1990" min="1900" max="2024" />
+        <label class="flabel" id="byr-label">Birth year (to show age / years)</label>
+        <input class="finput" id="mBYear" type="number" placeholder="e.g. 1990" min="1900" max="2026" />
         <div style="margin-top:8px">
           <label class="flabel">Relationship</label>
           <div class="togrow">
@@ -676,7 +676,7 @@ function copyMonth(year, month, btn) {
     var name = stripEmoji(e.name);
     var time = e.time ? ' - ' + fmtTime(e.time) : '';
     var note = e.notes ? ' (' + e.notes + ')' : '';
-    var age  = e.birthYear ? ' - turns ' + (year - parseInt(e.birthYear)) : '';
+    var yrs=e.birthYear?(d.getFullYear()-parseInt(e.birthYear)):0; var age=e.birthYear?(e.category==='anniversary'?' \u2014 '+yrs+(yrs===1?' year':' years'):' \u2014 turns '+yrs):'';
     lines.push('  ' + name + time + age + note);
   }
   var txt = lines.join('\n');
@@ -735,7 +735,11 @@ function render() {
       var cdClass='ev-cd'+(isToday?' today':diff<0?' past':'');
       var cdText=isToday?'🎉 Today':diff>0?diff+' day'+(diff>1?'s':'')+' left':Math.abs(diff)+' day'+(Math.abs(diff)>1?'s':'')+' ago';
       var rightHtml='';
-      if(e.birthYear){var age=mg.y-parseInt(e.birthYear);rightHtml='<div class="ev-right"><div class="ev-turns">turns</div><div class="ev-age">'+age+'</div></div>';}
+      if(e.birthYear){
+        var yrs2=d.getFullYear()-parseInt(e.birthYear);
+        var lbl2=e.category==='anniversary'?'years':'turns';
+        rightHtml='<div class="ev-right"><div class="ev-turns">'+lbl2+'</div><div class="ev-age">'+yrs2+'</div></div>';
+      }
       else if(isToday){rightHtml='<div class="ev-right"><div style="font-size:26px">🎉</div></div>';}
       else{var col=diff>=0?'var(--text)':'var(--dim)';rightHtml='<div class="ev-right"><div class="ev-dnum" style="color:'+col+'">'+Math.abs(diff)+'</div><div class="ev-dlbl">'+(diff>=0?'days left':'days ago')+'</div></div>';}
       html+='<div class="event-item'+(isToday?' today-item':'')+'" onclick="openEdit(\''+e.id+'\')">' +
@@ -760,7 +764,17 @@ function pickCat(id){
   document.querySelectorAll('.catbtn').forEach(function(b){b.classList.remove('on');b.style.borderColor='';b.style.color='';});
   var btn=document.getElementById('cb-'+id);
   if(btn){var c=getCat(id);btn.classList.add('on');btn.style.borderColor=c.color;btn.style.color=c.color;}
-  document.getElementById('byr-row').className=(id==='birthday')?'show':'';
+  var byrRow = document.getElementById('byr-row');
+  var byrLabel = document.getElementById('byr-label');
+  if (id==='anniversary') {
+    byrRow.className='show';
+    if(byrLabel) byrLabel.textContent='Year it started (to show # of years)';
+  } else if (id==='birthday') {
+    byrRow.className='show';
+    if(byrLabel) byrLabel.textContent='Birth year (to show age)';
+  } else {
+    byrRow.className='';
+  }
   document.getElementById('lunarHint').className='lunar-hint'+(id==='lunar-solar'?' show':'');
 }
 function setVisibility(v) {
@@ -1154,7 +1168,7 @@ function buildMonthText(year, month) {
     var name = stripEmoji(e.name);
     var time = e.time ? ' - ' + fmtTime(e.time) : '';
     var note = e.notes ? ' (' + e.notes + ')' : '';
-    var age  = e.birthYear ? ' - turns ' + (year - parseInt(e.birthYear)) : '';
+    var yrs=e.birthYear?(d.getFullYear()-parseInt(e.birthYear)):0; var age=e.birthYear?(e.category==='anniversary'?' \u2014 '+yrs+(yrs===1?' year':' years'):' \u2014 turns '+yrs):'';
     lines.push('  ' + name + time + age + note);
   }
   return lines.join('\n');
@@ -1236,7 +1250,7 @@ function copyMonth(year, month, btn) {
       lines.push(DNAMES[d.getDay()]+' '+MONTHS_S[d.getMonth()]+' '+d.getDate());
       lastDay=d.getDate();
     }
-    lines.push('  '+stripEmoji(e.name)+(e.time?' - '+fmtTime(e.time):'')+(e.birthYear?' - turns '+(year-parseInt(e.birthYear))+' yrs':'')+(e.notes?' ('+e.notes+')':''));
+    lines.push('  '+stripEmoji(e.name)+(e.time?' - '+fmtTime(e.time):'')+(e.birthYear?(e.category==='anniversary'?' - '+(year-parseInt(e.birthYear))+' years':' - turns '+(year-parseInt(e.birthYear))):'')+(e.notes?' ('+e.notes+')':''));
   }
   var txt=lines.join('\n'), orig=btn?btn.textContent:'⧉';
   copyText(txt,
@@ -1258,7 +1272,7 @@ function openEdit(id) {
   document.getElementById('mNotes').value = e.notes||'';
   document.getElementById('mBYear').value = e.birthYear||'';
   buildCatGrid(); setRecur(selRecur); setVisibility(selVisibility); setBRel(selBRel);
-  document.getElementById('byr-row').className=(selCat==='anniversary')?'show':'';
+  document.getElementById('byr-row').className=(selCat==='anniversary'||selCat==='birthday')?'show':'';
   document.getElementById('lunarHint').className='lunar-hint'+(selCat==='lunar-solar'?' show':'');
   var vRow=document.getElementById('visibilityRow');
   if(vRow) vRow.style.display=isAdmin()?'block':'none';
