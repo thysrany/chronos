@@ -30,7 +30,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 .sp-author { font-size:11px; letter-spacing:.12em; color:var(--gold); text-transform:uppercase; text-align:center; }
 .sp-reflection { font-size:13px; line-height:1.65; color:var(--muted); text-align:center; max-width:300px; font-style:normal; border-top:1px solid var(--border); padding-top:10px; margin-top:2px; }
 .sp-btns   { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
-.btn-ghost { padding:9px 16px; border-radius:40px; border:1px solid var(--border); background:transparent; color:var(--muted); font-family:'Open Sans',sans-serif; font-size:13px; cursor:pointer; }
+.btn-ghost { padding:9px 16px; border-radius:40px; border:1px solid var(--border); background:transparent; color:var(--muted); font-family:'Open Sans',sans-serif; font-size:13px; cursor:pointer; touch-action:manipulation; }
 .btn-gold  { padding:10px 28px; border-radius:40px; border:1px solid var(--gold); background:rgba(201,168,76,.12); color:var(--gold); font-family:'Open Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer; }
 
 /* ── SIGN-IN ── */
@@ -142,7 +142,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 
 /* toast uses inline styles */
 /* ── MONTH COPY ── */
-.month-copy-btn { background:transparent; border:1px solid rgba(201,168,76,0.3); border-radius:6px; color:var(--gold); font-size:10px; padding:6px 12px; cursor:pointer; font-family:'Open Sans',sans-serif; touch-action:manipulation; -webkit-tap-highlight-color:rgba(201,168,76,0.3); position:relative; z-index:20; }
+.month-copy-btn { background:transparent; border:1px solid rgba(201,168,76,0.3); border-radius:6px; color:var(--gold); font-size:10px; padding:6px 12px; cursor:pointer; font-family:'Open Sans',sans-serif; touch-action:manipulation; -webkit-tap-highlight-color:rgba(201,168,76,0.3); }
 .month-copy-btn:hover { opacity:1; background:rgba(201,168,76,0.1); }
 </style>
 </head>
@@ -621,20 +621,23 @@ function getFiltered() {
 }
 
 
+// Universal copy — exact SpeakDeck method confirmed working on device
 function copyText(text, onSuccess, onFail) {
-  // Try clipboard API first
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(text).then(function() {
-      if (onSuccess) onSuccess();
-    }).catch(function() {
-      // Fallback: show popup for manual copy
-      showCopyPopup(text);
-      if (onSuccess) onSuccess();
-    });
-  } else {
-    // Show popup for manual copy
-    showCopyPopup(text);
-    if (onSuccess) onSuccess();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(onSuccess).catch(function() { fallback(); });
+  } else { fallback(); }
+  function fallback() {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      ta.setSelectionRange(0, 99999);
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      if (ok) onSuccess(); else onFail();
+    } catch(e) { onFail(); }
   }
 }
 
@@ -1086,17 +1089,36 @@ function startEditEvent() {
 }
 
 
-function showCopyPopup(txt) {
-  var el = document.getElementById('copyPopupText');
-  el.value = txt;
-  document.getElementById('copyPopup').style.display = 'block';
-  setTimeout(function() { el.focus(); el.select(); el.setSelectionRange(0, 99999); }, 100);
-}
-function closeCopyPopup() {
-  document.getElementById('copyPopup').style.display = 'none';
+// ── MIGRATE old localStorage keys into current key ───
+function migrateStorage() {
+  var OLD_KEYS = ['ch_events','ch3_events','ch4_events','ch4b_events','ch4c_events'];
+  var current = [];
+  try { current = JSON.parse(localStorage.getItem('ch4d_events') || '[]'); } catch(e){ current = []; }
+  var currentIds = {};
+  for (var i=0; i<current.length; i++) currentIds[current[i].id] = true;
+
+  var merged = false;
+  for (var k=0; k<OLD_KEYS.length; k++) {
+    var raw = localStorage.getItem(OLD_KEYS[k]);
+    if (!raw) continue;
+    try {
+      var old = JSON.parse(raw);
+      for (var j=0; j<old.length; j++) {
+        if (!currentIds[old[j].id]) {
+          current.push(old[j]);
+          currentIds[old[j].id] = true;
+          merged = true;
+        }
+      }
+    } catch(e) {}
+  }
+  if (merged) {
+    try { localStorage.setItem('ch4d_events', JSON.stringify(current)); } catch(e){}
+  }
 }
 
 // ── INIT ─────────────────────────────────────────────
+migrateStorage();
 loadTheme();
 loadEvents();
 seedLunar();
@@ -1120,18 +1142,6 @@ if (!restoreSession()) {
       <button onclick="deleteEventFromSheet()" style="padding:12px;border-radius:8px;border:1px solid var(--red);background:transparent;color:var(--red);font-family:inherit;font-size:14px;cursor:pointer;text-align:left;">🗑️ Delete</button>
       <button onclick="closeActionSheet()" style="padding:12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;font-size:14px;cursor:pointer;text-align:left;">Cancel</button>
     </div>
-  </div>
-</div>
-
-<!-- COPY POPUP -->
-<div id="copyPopup" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.8);" onclick="closeCopyPopup()">
-  <div style="position:absolute;bottom:0;left:0;right:0;background:var(--bg2);border-radius:16px 16px 0 0;padding:1.25rem;max-width:600px;margin:0 auto;" onclick="event.stopPropagation()">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
-      <div style="font-size:13px;font-weight:700;color:var(--gold);">Hold &amp; Select All → Copy</div>
-      <button onclick="closeCopyPopup()" style="background:transparent;border:none;color:var(--muted);font-size:20px;cursor:pointer;">×</button>
-    </div>
-    <textarea id="copyPopupText" readonly style="width:100%;height:180px;background:var(--bg3);border:1px solid var(--gold);border-radius:8px;color:var(--text);font-family:'Open Sans',sans-serif;font-size:13px;padding:10px;resize:none;outline:none;-webkit-user-select:text;user-select:text;"></textarea>
-    <div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">Tap the text above → hold → Select All → Copy</div>
   </div>
 </div>
 </body>
