@@ -759,16 +759,7 @@ function render() {
     }
   }
   list.innerHTML=html;
-  var cbs=list.querySelectorAll('.month-copy-btn');
-  for(var ci=0;ci<cbs.length;ci++){
-    (function(b){
-      b.addEventListener('click',function(ev){
-        ev.stopPropagation();
-        alert('Button tapped! year=' + b.getAttribute('data-year') + ' month=' + b.getAttribute('data-month'));
-        copyMonth(parseInt(b.getAttribute('data-year')),parseInt(b.getAttribute('data-month')),b);
-      });
-    })(cbs[ci]);
-  }
+
 }
 
 // ── MODAL ─────────────────────────────────────────────
@@ -1155,6 +1146,17 @@ loadTheme();
 loadEvents();
 seedLunar();
 initSplash();
+
+// ONE event delegation listener - survives all render() calls
+document.getElementById('eventList').addEventListener('click', function(ev) {
+  var btn = ev.target;
+  if (btn && btn.classList && btn.classList.contains('month-copy-btn')) {
+    ev.stopPropagation();
+    var y = parseInt(btn.getAttribute('data-year'));
+    var m = parseInt(btn.getAttribute('data-month'));
+    copyMonth(y, m, btn);
+  }
+});
 
 // Show sign-in screen by default, restore session if available
 document.getElementById('app').style.display = 'none';
