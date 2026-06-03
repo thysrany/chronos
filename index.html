@@ -327,7 +327,8 @@ var QUOTES = [
 
 var CATS = [
   { id:'lunar-solar',  label:'🌙 Moon & Sun',   color:'#7c6faf' },
-  { id:'anniversary',  label:'🎂 Anniversary',  color:'#e07b8a' },
+  { id:'birthday',     label:'🎂 Birthday',     color:'#e07b8a' },
+  { id:'anniversary',  label:'🥂 Anniversary',  color:'#c084fc' },
   { id:'holiday',      label:'🎉 Holiday',      color:'#e8a838' },
   { id:'work',         label:'💼 Work',         color:'#4a9eda' },
   { id:'personal',     label:'🌿 Personal',     color:'#5caa72' },
@@ -766,15 +767,15 @@ function pickCat(id){
   var btn=document.getElementById('cb-'+id);
   if(btn){var c=getCat(id);btn.classList.add('on');btn.style.borderColor=c.color;btn.style.color=c.color;}
   // Set default recurrence for category
-  if(id==='anniversary'){ setRecur('yearly'); selRecur='yearly'; }
+  if(id==='anniversary'||id==='birthday'){ setRecur('yearly'); selRecur='yearly'; }
   var byrRow = document.getElementById('byr-row');
   var byrLabel = document.getElementById('byr-label');
-  if (id==='anniversary') {
+  if (id==='birthday') {
     byrRow.className='show';
-    if(byrLabel) byrLabel.textContent='Year it started (to show # of years)';
-  } else if (id==='birthday') {
+    if(byrLabel) byrLabel.textContent='Birth year (to show age e.g. turns 32)';
+  } else if (id==='anniversary') {
     byrRow.className='show';
-    if(byrLabel) byrLabel.textContent='Birth year (to show age)';
+    if(byrLabel) byrLabel.textContent='Year it started (to show # of years e.g. 5 years)';
   } else {
     byrRow.className='';
   }
@@ -823,7 +824,7 @@ function saveEvent(){
     category:selCat, recur:selRecur,
     notes:document.getElementById('mNotes').value.trim(),
     birthYear:document.getElementById('mBYear').value||null,
-    bRel:selCat==='anniversary'?selBRel:null,
+    bRel:(selCat==='anniversary'||selCat==='birthday')?selBRel:null,
     isAdmin: isAdmin(),
     isPublic: isAdmin() ? (selVisibility==='public') : false
   };
@@ -1034,7 +1035,7 @@ function saveEvent() {
     category:selCat, recur:selRecur,
     notes:document.getElementById('mNotes').value.trim(),
     birthYear:document.getElementById('mBYear').value||null,
-    bRel:selCat==='anniversary'?selBRel:null,
+    bRel:(selCat==='anniversary'||selCat==='birthday')?selBRel:null,
     isAdmin: isAdmin()
   };
   if (_editingId) { events = events.filter(function(x){ return x.id !== _editingId; }); _editingId = null; }
