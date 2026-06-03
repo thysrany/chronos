@@ -271,9 +271,6 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 </div>
 
 <script>
-var _user = null;
-var _token = null;
-
 var QUOTES = [
   {
     t: "The secret of getting ahead is getting started.",
@@ -328,12 +325,12 @@ var QUOTES = [
 ];
 
 var CATS = [
-  { id:'lunar-solar', label:'🌙 Moon & Sun',  color:'#7c6faf' },
-  { id:'anniversary', label:'🎂 Anniversary', color:'#e07b8a' },
-  { id:'holiday',     label:'🎉 Holiday',     color:'#e8a838' },
-  { id:'work',        label:'💼 Work',        color:'#4a9eda' },
-  { id:'personal',    label:'🌿 Personal',    color:'#5caa72' },
-  { id:'other',       label:'✦ Other',        color:'#aaaaaa' }
+  { id:'lunar-solar',  label:'🌙 Moon & Sun',   color:'#7c6faf' },
+  { id:'anniversary',  label:'🎂 Anniversary',  color:'#e07b8a' },
+  { id:'holiday',      label:'🎉 Holiday',      color:'#e8a838' },
+  { id:'work',         label:'💼 Work',         color:'#4a9eda' },
+  { id:'personal',     label:'🌿 Personal',     color:'#5caa72' },
+  { id:'other',        label:'✦ Other',         color:'#aaaaaa' }
 ];
 
 var THEMES = [
@@ -728,7 +725,7 @@ function render() {
   var html='';
   for(var mi=0;mi<monthOrder.length;mi++){
     var mg=months[monthOrder[mi]];
-    html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class="mcopy-btn" onclick="copyMonth('+mg.y+','+mg.m+',this)">⧉</button></div>';
+    html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class=\"mcopy-btn\" onclick=\"copyMonth(\'+mg.y+\',\'+mg.m+\',this)\">\u2a47</button></div>';
     for(var ii=0;ii<mg.items.length;ii++){
       var item=mg.items[ii],e=item.ev,d=item.date,cat=getCat(e.category);
       var isToday=d.getTime()===now.getTime();
@@ -763,7 +760,7 @@ function pickCat(id){
   document.querySelectorAll('.catbtn').forEach(function(b){b.classList.remove('on');b.style.borderColor='';b.style.color='';});
   var btn=document.getElementById('cb-'+id);
   if(btn){var c=getCat(id);btn.classList.add('on');btn.style.borderColor=c.color;btn.style.color=c.color;}
-  document.getElementById('byr-row').className=(id==='anniversary')?'show':'';
+  document.getElementById('byr-row').className=(id==='birthday')?'show':'';
   document.getElementById('lunarHint').className='lunar-hint'+(id==='lunar-solar'?' show':'');
 }
 function setVisibility(v) {
@@ -797,7 +794,7 @@ function openModal(){
   if (vRow) vRow.style.display = isAdmin() ? 'block' : 'none';
   document.getElementById('overlay').classList.add('show');
 }
-function closeModal(){document.getElementById('overlay').classList.remove('show'); _editingId=null;}
+function closeModal(){document.getElementById('overlay').classList.remove('show');_editingId=null;}
 function overlayClick(e){if(e.target===document.getElementById('overlay'))closeModal();}
 function saveEvent(){
   var name=document.getElementById('mName').value.trim(),date=document.getElementById('mDate').value;
@@ -816,7 +813,7 @@ function saveEvent(){
   if (_editingId) { events = events.filter(function(x){ return x.id !== _editingId; }); _editingId = null; }
   events.push(ev);
   try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
-  if (_token && _user) window.syncNow();
+  if (_token && _user) syncNow();
   closeModal(); render();
 }
 function delEvent(id,e){
@@ -826,205 +823,493 @@ function delEvent(id,e){
   saveEventsLocal();render();
 }
 
+// ── FIREBASE CONFIG (SpeakDeck project) ─────────────
+var FB_PROJECT = 'speakdeck-bb76b';
+var FB_API_KEY  = 'AIzaSyAnDJ8sBzs8kY9xwN9yj545H7FJtbVHjCA';
+var CLIENT_ID   = '55277159527-53fbmbof24n7rhs44h6qtp58atcgqe6i.apps.googleusercontent.com';
+var ADMIN_EMAIL = 'thysrany@gmail.com'; // ← your Gmail = admin
+
+var _user        = null;
+var _token       = null;
+var _tokenClient = null;
+var _refreshTimer = null;
+
+// ── AUTH ─────────────────────────────────────────────
+function doSignIn() {
+  if (typeof google === 'undefined' || !google.accounts) {
+    alert('Sign-in is loading, please try again in a moment.');
+    return;
+  }
+  if (!_tokenClient) {
+    _tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: 'profile email https://www.googleapis.com/auth/datastore',
+      callback: function(resp) {
+        if (resp.error) { alert('Sign-in failed: ' + resp.error); return; }
+        _token = resp.access_token;
+        var exp = Date.now() + (resp.expires_in - 300) * 1000;
+        localStorage.setItem('ch_token', _token);
+        localStorage.setItem('ch_token_exp', exp);
+        scheduleTokenRefresh(resp.expires_in - 300);
+        fetchUserInfo();
+      }
+    });
+  }
+  _tokenClient.requestAccessToken({ prompt: 'select_account' });
+}
+
+function doSignOut() {
+  _user = null; _token = null;
+  localStorage.removeItem('ch_token');
+  localStorage.removeItem('ch_token_exp');
+  localStorage.removeItem('ch_user');
+  if (_refreshTimer) clearTimeout(_refreshTimer);
+  updateAuthUI(false);
+  document.getElementById('signinScreen').classList.remove('hidden');
+  document.getElementById('app').style.display = 'none';
+}
+
+function scheduleTokenRefresh(secondsUntilRefresh) {
+  if (_refreshTimer) clearTimeout(_refreshTimer);
+  _refreshTimer = setTimeout(function() {
+    if (_tokenClient) _tokenClient.requestAccessToken({ prompt: '' });
+  }, secondsUntilRefresh * 1000);
+}
+
+function fetchUserInfo() {
+  fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: 'Bearer ' + _token }
+  }).then(function(r) { return r.json(); }).then(function(info) {
+    _user = { name: info.name, email: info.email, photo: info.picture };
+    localStorage.setItem('ch_user', JSON.stringify(_user));
+    onSignedIn();
+  });
+}
+
+function onSignedIn() {
+  document.getElementById('signinScreen').classList.add('hidden');
+  document.getElementById('app').style.display = '';
+  updateAuthUI(true);
+  loadFromFirestore();
+}
 
 function updateAuthUI(signedIn) {
   var addBtn  = document.getElementById('addBtn');
   var chip    = document.getElementById('userChip');
   var syncBtn = document.getElementById('syncNavBtn');
-  var fab     = document.getElementById('fab');
   if (signedIn && _user) {
     if (addBtn)  addBtn.style.display  = '';
+    var fab=document.getElementById('fab'); if(fab) fab.style.display='flex';
     if (syncBtn) syncBtn.style.display = '';
-    if (fab)     fab.style.display     = 'flex';
-    var admin = window.isAdmin ? window.isAdmin() : false;
-    chip.style.display = 'flex'; chip.style.alignItems = 'center'; chip.style.gap = '6px';
+    var admin = _user.email === ADMIN_EMAIL;
+    chip.style.display = 'flex';
+    chip.style.alignItems = 'center';
+    chip.style.gap = '6px';
     chip.innerHTML =
       (_user.photo ? '<img src="'+_user.photo+'" alt="" style="width:28px;height:28px;border-radius:50%;border:2px solid var(--gold);flex-shrink:0">' : '') +
       '<div style="display:flex;flex-direction:column;align-items:flex-start;gap:1px">' +
-        (admin ? '<span class="admin-badge">ADMIN</span>' : '<span style="font-size:10px;color:rgba(255,255,255,0.7)">'+(_user.name||'').split(' ')[0]+'</span>') +
-        '<button class="signout-btn" style="padding:0;font-size:10px;text-align:left" onclick="window.doSignOut()">Sign out</button>' +
+        (admin ? '<span class="admin-badge">ADMIN</span>' : '<span style="font-size:10px;color:rgba(255,255,255,0.7);max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(_user.name||'').split(' ')[0]+'</span>') +
+        '<button class="signout-btn" style="padding:0;font-size:10px;text-align:left" onclick="doSignOut()">Sign out</button>' +
       '</div>';
   } else {
     if (addBtn)  addBtn.style.display  = 'none';
+    var fab=document.getElementById('fab'); if(fab) fab.style.display='none';
     if (syncBtn) syncBtn.style.display = 'none';
-    if (fab)     fab.style.display     = 'none';
-    chip.style.display = 'none'; chip.innerHTML = '';
+    chip.style.display = 'none';
+    chip.innerHTML = '';
   }
 }
 
+// ── FIRESTORE REST ────────────────────────────────────
+function fsUrl(docPath) {
+  return 'https://firestore.googleapis.com/v1/projects/' + FB_PROJECT +
+         '/databases/(default)/documents/' + docPath + '?key=' + FB_API_KEY;
+}
 
-function onSignedIn() {
-  var splash = document.getElementById('splash');
-  if (splash) { splash.classList.add('hidden'); splash.style.display='none'; }
-  document.getElementById('signinScreen').classList.add('hidden');
-  document.getElementById('app').style.display = '';
-  document.getElementById('app').classList.add('show');
-  var fab = document.getElementById('fab'); if (fab) fab.style.display = 'flex';
-  updateAuthUI(true);
-  buildCatStrip();
+function fsWrite(docPath, data) {
+  if (!_token) return;
+  var fields = {};
+  fields['eventsJson'] = { stringValue: JSON.stringify(data) };
+  fetch('https://firestore.googleapis.com/v1/projects/' + FB_PROJECT +
+        '/databases/(default)/documents/' + docPath + '?key=' + FB_API_KEY, {
+    method: 'PATCH',
+    headers: { 'Authorization': 'Bearer ' + _token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: fields })
+  });
+}
+
+function fsRead(docPath, cb) {
+  if (!_token) return;
+  fetch(fsUrl(docPath), {
+    headers: { 'Authorization': 'Bearer ' + _token }
+  }).then(function(r) { return r.json(); }).then(function(doc) {
+    if (doc.fields && doc.fields.eventsJson) {
+      try { cb(JSON.parse(doc.fields.eventsJson.stringValue)); } catch(e) { cb(null); }
+    } else { cb(null); }
+  }).catch(function() { cb(null); });
+}
+
+function isAdmin() { return _user && _user.email === ADMIN_EMAIL; }
+
+function loadFromFirestore() {
+  // Load public admin events (visible to all users)
+  fsRead('chronos/adminEvents', function(adminEvts) {
+    var personal = events.filter(function(e) { return !e.isAdmin; });
+    if (adminEvts && adminEvts.length) {
+      var adminMarked = adminEvts.map(function(e) { e.isAdmin = true; e.isPublic = true; return e; });
+      events = personal.concat(adminMarked);
+    } else {
+      events = personal;
+    }
+    try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
+    render();
+  });
+  // Load user's own private events
+  if (_user) {
+    var uid = btoa(_user.email).replace(/=/g,'');
+    fsRead('chronos/users_' + uid, function(userEvts) {
+      var pub = events.filter(function(e) { return e.isAdmin && e.isPublic; });
+      if (userEvts && userEvts.length) {
+        events = pub.concat(userEvts);
+      } else {
+        events = pub;
+      }
+      try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
+      render();
+    });
+  }
+}
+
+function syncNow() {
+  if (!_token || !_user) return;
+  var uid = btoa(_user.email).replace(/=/g,'');
+  if (isAdmin()) {
+    // Public admin events → everyone sees them
+    var publicEvts = events.filter(function(e) { return e.isAdmin && e.isPublic; });
+    fsWrite('chronos/adminEvents', publicEvts);
+    // Private admin events → only saved to admin's personal doc
+    var adminPrivate = events.filter(function(e) { return e.isAdmin && !e.isPublic; });
+    var adminPersonal = events.filter(function(e) { return !e.isAdmin; });
+    fsWrite('chronos/users_' + uid, adminPrivate.concat(adminPersonal));
+  } else {
+    var personalEvts = events.filter(function(e) { return !e.isAdmin; });
+    fsWrite('chronos/users_' + uid, personalEvts);
+  }
+  showToast('✓ Synced!');
+}
+
+// Override saveEventsLocal to also sync if signed in
+var _origSaveLocal = saveEventsLocal;
+function saveEventsLocal() {
+  try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
+  if (_token && _user) syncNow();
+}
+
+// Override saveEvent to mark admin events
+var _origSaveEvent = saveEvent;
+function saveEvent() {
+  var name=document.getElementById('mName').value.trim(),date=document.getElementById('mDate').value;
+  if(!name){alert('Please enter an event name.');return;}
+  if(!date){alert('Please select a date.');return;}
+  var ev = {
+    id:'u'+Date.now(), name:name, date:date,
+    time:document.getElementById('mTime').value,
+    category:selCat, recur:selRecur,
+    notes:document.getElementById('mNotes').value.trim(),
+    birthYear:document.getElementById('mBYear').value||null,
+    bRel:selCat==='anniversary'?selBRel:null,
+    isAdmin: isAdmin()
+  };
+  if (_editingId) { events = events.filter(function(x){ return x.id !== _editingId; }); _editingId = null; }
+  events.push(ev);
+  try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
+  if (_token && _user) syncNow();
+  closeModal(); render();
+}
+
+// ── RESTORE SESSION ───────────────────────────────────
+function restoreSession() {
+  var savedUser  = localStorage.getItem('ch_user');
+  var savedToken = localStorage.getItem('ch_token');
+  var savedExp   = parseInt(localStorage.getItem('ch_token_exp') || '0');
+  if (savedUser && savedToken && Date.now() < savedExp) {
+    _user  = JSON.parse(savedUser);
+    _token = savedToken;
+    var secsLeft = Math.floor((savedExp - Date.now()) / 1000);
+    scheduleTokenRefresh(secsLeft);
+    onSignedIn();
+    return true;
+  }
+  return false;
+}
+
+
+var _actionId = null;
+var _editingId = null;
+
+function openActionSheet(id) {
+  var e = null;
+  for (var i=0; i<events.length; i++) { if (events[i].id===id) { e=events[i]; break; } }
+  if (!e) return;
+  _actionId = id;
+  var cat = getCat(e.category);
+  document.getElementById('asTitle').textContent = stripEmoji(e.name);
+  var parts = e.date.split('-');
+  var meta = cat.label + '  |  ' + MONTHS_S[parseInt(parts[1])-1] + ' ' + parts[2] + ', ' + parts[0];
+  if (e.time) meta += '  |  ' + fmtTime(e.time);
+  if (e.notes) meta += '\n' + e.notes;
+  document.getElementById('asMeta').textContent = meta;
+  document.getElementById('actionSheet').style.display = 'block';
+}
+
+function closeActionSheet() {
+  document.getElementById('actionSheet').style.display = 'none';
+  _actionId = null;
+}
+
+function deleteEventFromSheet() {
+  if (!_actionId) return;
+  if (!confirm('Delete this event?')) return;
+  events = events.filter(function(ev){ return ev.id !== _actionId; });
+  try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(ex){}
+  if (_token && _user) syncNow();
+  closeActionSheet();
   render();
 }
 
-// ── FIREBASE SYNC (exact SpeakDeck pattern) ─────────
-(function(){
-  var PROJECT  = 'speakdeck-bb76b';
-  var API_KEY  = 'AIzaSyAnDJ8sBzs8kY9xwN9yj545H7FJtbVHjCA';
-  var CLIENT_ID= '55277159527-53fbmbof24n7rhs44h6qtp58atcgqe6i.apps.googleusercontent.com';
-  var ADMIN    = 'thysrany@gmail.com';
-  var FS       = 'https://firestore.googleapis.com/v1/projects/'+PROJECT+'/databases/(default)/documents/';
+function startEditEvent() {
+  if (!_actionId) return;
+  var e = null;
+  for (var i=0; i<events.length; i++) { if (events[i].id===_actionId) { e=events[i]; break; } }
+  if (!e) return;
+  _editingId = _actionId;
+  closeActionSheet();
+  selCat = e.category; selRecur = e.recur || 'once';
+  selVisibility = e.isPublic ? 'public' : 'private';
+  selBRel = e.bRel || 'friend';
+  document.getElementById('mName').value = e.name;
+  document.getElementById('mDate').value = e.date;
+  document.getElementById('mTime').value = e.time || '';
+  document.getElementById('mNotes').value = e.notes || '';
+  document.getElementById('mBYear').value = e.birthYear || '';
+  buildCatGrid(); setRecur(selRecur); setVisibility(selVisibility); setBRel(selBRel);
+  document.getElementById('byr-row').className = (selCat==='anniversary') ? 'show' : '';
+  document.getElementById('lunarHint').className = 'lunar-hint' + (selCat==='lunar-solar' ? ' show' : '');
+  var vRow = document.getElementById('visibilityRow');
+  if (vRow) vRow.style.display = isAdmin() ? 'block' : 'none';
+  document.getElementById('overlay').classList.add('show');
+}
 
-  function getSaved(){ try{ var u=localStorage.getItem('ch_user'); return u?JSON.parse(u):null; }catch(e){return null;} }
-  function saveSaved(u){ try{ localStorage.setItem('ch_user',JSON.stringify(u)); }catch(e){} }
-  function clearSaved(){ try{ localStorage.removeItem('ch_user'); }catch(e){} }
 
-  function toFields(obj){ var f={}; Object.keys(obj).forEach(function(k){ f[k]=toVal(obj[k]); }); return f; }
-  function toVal(v){
-    if(v===null||v===undefined) return {nullValue:null};
-    if(typeof v==='boolean')    return {booleanValue:v};
-    if(typeof v==='number')     return {integerValue:''+v};
-    if(typeof v==='string')     return {stringValue:v};
-    if(Array.isArray(v))        return {arrayValue:{values:v.map(toVal)}};
-    if(typeof v==='object')     return {mapValue:{fields:toFields(v)}};
-    return {stringValue:''+v};
-  }
-  function fromFields(fields){ if(!fields) return {}; var obj={}; Object.keys(fields).forEach(function(k){ obj[k]=fromVal(fields[k]); }); return obj; }
-  function fromVal(v){
-    if(!v) return null;
-    if('nullValue'    in v) return null;
-    if('booleanValue' in v) return v.booleanValue;
-    if('integerValue' in v) return Number(v.integerValue);
-    if('doubleValue'  in v) return v.doubleValue;
-    if('stringValue'  in v) return v.stringValue;
-    if('arrayValue'   in v) return (v.arrayValue.values||[]).map(fromVal);
-    if('mapValue'     in v) return fromFields(v.mapValue.fields||{});
-    return null;
-  }
+// ── MIGRATE old localStorage keys into current key ───
+function migrateStorage() {
+  var OLD_KEYS = ['ch_events','ch3_events','ch4_events','ch4b_events','ch4c_events'];
+  var current = [];
+  try { current = JSON.parse(localStorage.getItem('ch4d_events') || '[]'); } catch(e){ current = []; }
+  var currentIds = {};
+  for (var i=0; i<current.length; i++) currentIds[current[i].id] = true;
 
-  function fsGet(path, token){
-    return fetch(FS+path, {headers:{'Authorization':'Bearer '+token}})
-      .then(function(r){ return r.ok?r.json():null; });
-  }
-  function fsPatch(path, token, data){
-    return fetch(FS+path+'?key='+API_KEY, {
-      method:'PATCH',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-      body:JSON.stringify({fields:toFields(data)})
-    });
-  }
-
-  var _tc=null, _rt=null;
-
-  function scheduleRefresh(expiresIn){
-    clearTimeout(_rt);
-    _rt=setTimeout(function(){ if(_tc&&_user) _tc.requestAccessToken({prompt:''}); }, Math.max(0,(expiresIn-300)*1000));
-  }
-
-  function applyToken(resp, userInfo){
-    _token=resp.access_token;
-    _user={name:userInfo.displayName, email:userInfo.email, photo:userInfo.photoURL};
-    saveSaved({uid:userInfo.uid, email:userInfo.email, name:userInfo.displayName,
-               photo:userInfo.photoURL, idToken:resp.access_token,
-               tokenExpiry:Date.now()+(resp.expires_in||3600)*1000});
-    scheduleRefresh(resp.expires_in||3600);
-  }
-
-  function doSignIn(){
-    if(typeof google==='undefined'||!google.accounts){ setTimeout(doSignIn,500); return; }
-    if(!_tc){
-      _tc=google.accounts.oauth2.initTokenClient({
-        client_id:CLIENT_ID,
-        scope:'profile email https://www.googleapis.com/auth/datastore',
-        callback:function(resp){
-          if(resp.error){ showToast('Sign-in failed'); return; }
-          fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{'Authorization':'Bearer '+resp.access_token}})
-            .then(function(r){return r.json();})
-            .then(function(info){
-              applyToken(resp,{uid:info.sub,email:info.email,displayName:info.name,photoURL:info.picture});
-              showToast('Signed in!');
-              onSignedIn();
-              doLoad(info.sub);
-            });
+  var merged = false;
+  for (var k=0; k<OLD_KEYS.length; k++) {
+    var raw = localStorage.getItem(OLD_KEYS[k]);
+    if (!raw) continue;
+    try {
+      var old = JSON.parse(raw);
+      for (var j=0; j<old.length; j++) {
+        if (!currentIds[old[j].id]) {
+          current.push(old[j]);
+          currentIds[old[j].id] = true;
+          merged = true;
         }
-      });
+      }
+    } catch(e) {}
+  }
+  if (merged) {
+    try { localStorage.setItem('ch4d_events', JSON.stringify(current)); } catch(e){}
+  }
+}
+
+
+
+var _monthSheetYear = null;
+var _monthSheetMonth = null;
+
+function buildMonthText(year, month) {
+  var savedTime = timeFilter;
+  timeFilter = 'all';
+  var allItems = getFiltered().filter(function(item) {
+    return item.date.getFullYear() === year && item.date.getMonth() === month;
+  });
+  timeFilter = savedTime;
+  if (!allItems.length) return '';
+  var lines = [MONTHS[month] + ' ' + year, ''];
+  var lastDay = -1;
+  for (var i = 0; i < allItems.length; i++) {
+    var item = allItems[i], e = item.ev, d = item.date;
+    if (d.getDate() !== lastDay) {
+      if (lastDay !== -1) lines.push('');
+      lines.push(DNAMES[d.getDay()] + ' ' + MONTHS_S[d.getMonth()] + ' ' + d.getDate());
+      lastDay = d.getDate();
     }
-    _tc.requestAccessToken({prompt:''});
+    var name = stripEmoji(e.name);
+    var time = e.time ? ' - ' + fmtTime(e.time) : '';
+    var note = e.notes ? ' (' + e.notes + ')' : '';
+    var age  = e.birthYear ? ' - turns ' + (year - parseInt(e.birthYear)) : '';
+    lines.push('  ' + name + time + age + note);
   }
+  return lines.join('\n');
+}
 
-  function doSignOut(){
-    clearTimeout(_rt); _token=null; _user=null; clearSaved();
-    var fab=document.getElementById('fab'); if(fab) fab.style.display='none';
-    updateAuthUI(false);
-    document.getElementById('signinScreen').classList.remove('hidden');
-    document.getElementById('app').style.display='none';
-    showToast('Signed out');
+function openMonthSheet(year, month) {
+  _monthSheetYear = year;
+  _monthSheetMonth = month;
+  document.getElementById('monthSheetTitle').textContent = MONTHS[month] + ' ' + year;
+  document.getElementById('monthSheet').style.display = 'block';
+}
+
+function closeMonthSheet() {
+  document.getElementById('monthSheet').style.display = 'none';
+}
+
+
+
+
+// Event delegation for month action button
+document.getElementById('eventList').addEventListener('click', function(ev) {
+  var btn = ev.target;
+  if (btn && btn.classList && btn.classList.contains('maction-btn')) {
+    ev.stopPropagation();
+    var id = btn.id; // mab-2025-5
+    var parts = id.split('-');
+    openMonthSheet(parseInt(parts[1]), parseInt(parts[2]));
   }
+});
 
-  function doSync(){
-    if(!_token||!_user) return;
-    var saved=getSaved(); if(!saved||!saved.uid) return;
-    var personal=events.filter(function(e){return !e.isAdmin;});
-    fsPatch('chronos/users_'+saved.uid, _token, {events:personal, updatedAt:Date.now()})
-      .then(function(r){
-        if(r.ok) showToast('\u2713 Synced!');
-        else r.text().then(function(t){showToast('Sync error '+r.status); console.error(t);});
-      }).catch(function(e){showToast('Sync failed'); console.error(e);});
-    if(_user.email===ADMIN){
-      var pub=events.filter(function(e){return e.isPublic===true;});
-      fsPatch('chronos/adminEvents', _token, {events:pub, updatedAt:Date.now()});
+
+function migrateStorage() {
+  var OLD_KEYS = ['ch_events','ch3_events','ch4_events','ch4b_events','ch4c_events'];
+  var current = [];
+  try { current = JSON.parse(localStorage.getItem('ch4d_events') || '[]'); } catch(e){ current = []; }
+  var ids = {}; current.forEach(function(e){ ids[e.id]=true; });
+  OLD_KEYS.forEach(function(k){
+    var raw = localStorage.getItem(k); if (!raw) return;
+    try { JSON.parse(raw).forEach(function(e){ if (!ids[e.id]){ current.push(e); ids[e.id]=true; } }); } catch(e){}
+  });
+  try { localStorage.setItem('ch4d_events', JSON.stringify(current)); } catch(e){}
+}
+
+function goHome() {
+  initSplash();
+  var s = document.getElementById('splash');
+  s.style.display=''; s.style.opacity='0'; s.classList.remove('hidden');
+  setTimeout(function(){ s.style.opacity='1'; }, 10);
+}
+
+function copyText(text, onSuccess, onFail) {
+  var ok = false;
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText='position:fixed;top:0;left:0;width:2px;height:2px;opacity:0;';
+    document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0,text.length);
+    ok = document.execCommand('copy'); document.body.removeChild(ta);
+  } catch(ex){ ok=false; }
+  if (ok) { if(onSuccess) onSuccess(); return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function(){ if(onSuccess) onSuccess(); }).catch(function(){ if(onFail) onFail(); });
+    return;
+  }
+  if (onFail) onFail();
+}
+
+function copyMonth(year, month, btn) {
+  var savedTime=timeFilter; timeFilter='all';
+  var allItems=getFiltered().filter(function(item){
+    return item.date.getFullYear()===year && item.date.getMonth()===month;
+  });
+  timeFilter=savedTime;
+  if (!allItems.length) return;
+  var lines=[MONTHS[month]+' '+year,''], lastDay=-1;
+  for (var i=0;i<allItems.length;i++) {
+    var item=allItems[i],e=item.ev,d=item.date;
+    if (d.getDate()!==lastDay) {
+      if (lastDay!==-1) lines.push('');
+      lines.push(DNAMES[d.getDay()]+' '+MONTHS_S[d.getMonth()]+' '+d.getDate());
+      lastDay=d.getDate();
+    }
+    lines.push('  '+stripEmoji(e.name)+(e.time?' - '+fmtTime(e.time):'')+(e.birthYear?' - turns '+(year-parseInt(e.birthYear))+' yrs':'')+(e.notes?' ('+e.notes+')':''));
+  }
+  var txt=lines.join('\n'), orig=btn?btn.textContent:'⧉';
+  copyText(txt,
+    function(){ if(btn){ btn.textContent='\u2713 Copied!'; btn.style.color='var(--gold)'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; },2000); } },
+    function(){ if(btn){ btn.textContent='\u2717 Failed'; btn.style.color='var(--red)'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; },2000); } }
+  );
+}
+
+var _editingId = null;
+function openEdit(id) {
+  var e=events.filter(function(x){ return x.id===id; })[0]; if(!e) return;
+  _editingId=id;
+  selCat=e.category||'other'; selRecur=e.recur||'once';
+  selVisibility=e.isPublic?'public':'private';
+  selBRel=e.bRel||'friend';
+  document.getElementById('mName').value  = e.name;
+  document.getElementById('mDate').value  = e.date;
+  document.getElementById('mTime').value  = e.time||'';
+  document.getElementById('mNotes').value = e.notes||'';
+  document.getElementById('mBYear').value = e.birthYear||'';
+  buildCatGrid(); setRecur(selRecur); setVisibility(selVisibility); setBRel(selBRel);
+  document.getElementById('byr-row').className=(selCat==='anniversary')?'show':'';
+  document.getElementById('lunarHint').className='lunar-hint'+(selCat==='lunar-solar'?' show':'');
+  var vRow=document.getElementById('visibilityRow');
+  if(vRow) vRow.style.display=isAdmin()?'block':'none';
+  document.getElementById('overlay').classList.add('show');
+}
+
+// ── INIT ─────────────────────────────────────────────
+migrateStorage();
+loadTheme();
+loadEvents();
+seedLunar();
+initSplash();
+
+// Wire month sheet buttons after full DOM load
+window.addEventListener('load', function() {
+document.getElementById('monthCopyBtn').onclick = function() {
+  var txt = buildMonthText(_monthSheetYear, _monthSheetMonth);
+  if (!txt) { closeMonthSheet(); return; }
+  var btn = document.getElementById('monthCopyBtn');
+  var orig = btn.textContent;
+  copyText(txt,
+    function() { btn.textContent='\u2713 Copied!'; btn.style.color='#c9a84c'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; closeMonthSheet(); },1500); },
+    function() { btn.textContent='\u2717 Failed';  btn.style.color='#f87171'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; },2000); }
+  );
+};
+document.getElementById('monthShareBtn').onclick = function() {
+  var txt = buildMonthText(_monthSheetYear, _monthSheetMonth);
+  if (!txt) { closeMonthSheet(); return; }
+  if (navigator.share) {
+    navigator.share({ title: MONTHS[_monthSheetMonth]+' '+_monthSheetYear, text: txt })
+      .then(function(){ closeMonthSheet(); }).catch(function(){});
+  } else {
+    document.getElementById('monthCopyBtn').click();
+  }
+};
+}); // end window.onload
+
+
+// Desktop: regular click
+document.getElementById('eventList').addEventListener('click', function(ev) {
+  var btn = ev.target;
+  if (btn && btn.classList && btn.classList.contains('month-copy-btn')) {
+    if (!('ontouchstart' in window)) {
+      copyMonth(parseInt(btn.getAttribute('data-year')), parseInt(btn.getAttribute('data-month')), btn);
     }
   }
+});
 
-  function doLoad(uid){
-    if(!_token) return;
-    fsGet('chronos/users_'+uid, _token).then(function(doc){
-      var personal=[];
-      if(doc&&doc.fields){ var d=fromFields(doc.fields); if(d.events&&d.events.length) personal=d.events; }
-      fsGet('chronos/adminEvents', _token).then(function(doc2){
-        var admin=[];
-        if(doc2&&doc2.fields){ var d2=fromFields(doc2.fields); if(d2.events&&d2.events.length) admin=d2.events.map(function(e){e.isAdmin=true;e.isPublic=true;return e;}); }
-        if(personal.length||admin.length){
-          events=personal.concat(admin);
-          try{localStorage.setItem('ch4d_events',JSON.stringify(events));}catch(ex){}
-          render(); showToast('\u2713 Loaded!');
-        }
-      });
-    }).catch(function(e){console.error('load error',e);});
-  }
-
-  window.isAdmin       = function(){ return _user&&_user.email===ADMIN; };
-  window.syncNow       = doSync;
-  window._fbSync       = doSync;
-  window.loadFromFirestore = function(){ var s=getSaved(); if(s&&s.uid) doLoad(s.uid); };
-  window.doSignIn      = doSignIn;
-  window.doSignOut     = doSignOut;
-
-  // Restore session
-  var saved=getSaved();
-  if(saved&&saved.idToken&&saved.tokenExpiry&&Date.now()<saved.tokenExpiry-60000){
-    _token=saved.idToken;
-    _user={name:saved.name, email:saved.email, photo:saved.photo};
-    var rem=Math.floor((saved.tokenExpiry-Date.now())/1000);
-    function tryInit(){
-      if(typeof google!=='undefined'&&google.accounts){
-        _tc=google.accounts.oauth2.initTokenClient({
-          client_id:CLIENT_ID,
-          scope:'profile email https://www.googleapis.com/auth/datastore',
-          callback:function(resp){ if(!resp.error) applyToken(resp,{uid:saved.uid,email:saved.email,displayName:saved.name,photoURL:saved.photo}); }
-        });
-        scheduleRefresh(rem);
-      } else { setTimeout(tryInit,300); }
-    }
-    tryInit();
-  } else if(saved){ clearSaved(); }
-
-})();
-
-// Init
-document.getElementById('app').style.display='none';
-if(_user){
-  onSignedIn();
-  window.loadFromFirestore();
-} else {
+// Show sign-in screen by default, restore session if available
+document.getElementById('app').style.display = 'none';
+if (!restoreSession()) {
   document.getElementById('signinScreen').classList.remove('hidden');
 }
 </script>
@@ -1057,12 +1342,3 @@ if(_user){
 <button id="fab" onclick="openModal()" style="position:fixed;bottom:80px;right:20px;width:56px;height:56px;border-radius:50%;background:var(--gold);border:none;color:#0d1117;font-size:32px;font-weight:900;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.35);z-index:300;touch-action:manipulation;">＋</button>
 </body>
 </html>
-// Show sign-in or restore session
-document.getElementById('app').style.display = 'none';
-if (_user) {
-  onSignedIn();
-  window.loadFromFirestore();
-} else {
-  document.getElementById('signinScreen').classList.remove('hidden');
-}
-
