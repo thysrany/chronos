@@ -626,29 +626,28 @@ function getFiltered() {
 
 // execCommand FIRST (confirmed working on this device), clipboard API as backup
 function copyText(text, onSuccess, onFail) {
-  var done = false;
-  // Method 1: textarea + execCommand (works in direct tap gesture on Android)
+  // On HTTPS use clipboard API — it's the only reliable method
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      if (onSuccess) onSuccess();
+    }).catch(function(err) {
+      if (onFail) onFail();
+    });
+    return;
+  }
+  // Fallback: execCommand
   try {
     var ta = document.createElement('textarea');
     ta.value = text;
-    ta.contentEditable = true;
-    ta.readOnly = false;
-    ta.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:60px;opacity:0.01;z-index:-1;';
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:2px;height:2px;opacity:0;';
     document.body.appendChild(ta);
     ta.focus();
     ta.select();
     ta.setSelectionRange(0, text.length);
-    done = document.execCommand('copy');
+    var ok = document.execCommand('copy');
     document.body.removeChild(ta);
-  } catch(e) { done = false; }
-
-  // Method 2: clipboard API as backup (fire and forget)
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(function(){}).catch(function(){});
-  }
-
-  if (done) { if (onSuccess) onSuccess(); }
-  else { if (onSuccess) onSuccess(); } // assume success — clipboard API may have caught it
+    if (ok) { if (onSuccess) onSuccess(); } else { if (onFail) onFail(); }
+  } catch(e) { if (onFail) onFail(); }
 }
 
 function copyMonth(year, month, btn) {
@@ -1183,7 +1182,6 @@ document.getElementById('eventList').addEventListener('click', function(ev) {
 
 
 function copyMonth(year, month) {
-  alert('copyMonth called: ' + year + '/' + month);
   var savedTime = timeFilter;
   timeFilter = 'all';
   var allItems = getFiltered().filter(function(item) {
