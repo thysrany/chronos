@@ -28,6 +28,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 .sp-line { width:32px; height:1px; background:var(--gold); opacity:.4; }
 .sp-quote  { font-family:'Cormorant Garamond',serif; font-size:17px; font-style:italic; line-height:1.5; color:var(--text); text-align:center; max-width:280px; }
 .sp-author { font-size:11px; letter-spacing:.12em; color:var(--gold); text-transform:uppercase; text-align:center; }
+.sp-reflection { font-size:13px; line-height:1.65; color:var(--muted); text-align:center; max-width:300px; font-style:normal; border-top:1px solid var(--border); padding-top:10px; margin-top:2px; }
 .sp-btns   { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
 .btn-ghost { padding:9px 16px; border-radius:40px; border:1px solid var(--border); background:transparent; color:var(--muted); font-family:'Open Sans',sans-serif; font-size:13px; cursor:pointer; }
 .btn-gold  { padding:10px 28px; border-radius:40px; border:1px solid var(--gold); background:rgba(201,168,76,.12); color:var(--gold); font-family:'Open Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer; }
@@ -159,6 +160,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
   <div class="sp-line"></div>
   <div class="sp-quote" id="sqText"></div>
   <div class="sp-author" id="sqAuthor"></div>
+  <div class="sp-reflection" id="sqReflection"></div>
   <div class="sp-btns">
     <button class="btn-ghost" id="copyBtn">⧉ Copy & Share</button>
     <button class="btn-gold" onclick="enterApp()">Enter →</button>
@@ -270,16 +272,56 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 
 <script>
 var QUOTES = [
-  { t:"The secret of getting ahead is getting started.", a:"Mark Twain" },
-  { t:"In the middle of every difficulty lies opportunity.", a:"Albert Einstein" },
-  { t:"The future belongs to those who believe in the beauty of their dreams.", a:"Eleanor Roosevelt" },
-  { t:"It does not matter how slowly you go as long as you do not stop.", a:"Confucius" },
-  { t:"Believe you can and you're halfway there.", a:"Theodore Roosevelt" },
-  { t:"Life is what happens when you're busy making other plans.", a:"John Lennon" },
-  { t:"The only way to do great work is to love what you do.", a:"Steve Jobs" },
-  { t:"The best time to plant a tree was 20 years ago. The second best time is now.", a:"Chinese Proverb" },
-  { t:"Act as if what you do makes a difference. It does.", a:"William James" },
-  { t:"What you do today can improve all your tomorrows.", a:"Ralph Marston" },
+  {
+    t: "The secret of getting ahead is getting started.",
+    a: "Mark Twain",
+    r: "Most of us wait for the perfect moment — the right mood, the right plan, the right conditions. But momentum only comes after the first step, never before it. Whatever you have been putting off, today is enough of a reason to begin. Small starts lead to great finishes."
+  },
+  {
+    t: "In the middle of every difficulty lies opportunity.",
+    a: "Albert Einstein",
+    r: "When life feels hard, it is easy to see only the obstacle in front of you. But every challenge carries within it a seed of something better — a new skill, a stronger character, an unexpected door. The difficulty is not in your way. It is the way."
+  },
+  {
+    t: "The future belongs to those who believe in the beauty of their dreams.",
+    a: "Eleanor Roosevelt",
+    r: "Dreams are not fantasies to be ashamed of — they are blueprints for the life you are capable of living. The people who shape the world are not the most talented or the most lucky. They are the ones who refused to stop believing, even when no one else could see what they saw yet."
+  },
+  {
+    t: "It does not matter how slowly you go as long as you do not stop.",
+    a: "Confucius",
+    r: "Progress does not always look dramatic. Sometimes it is one quiet step forward on a hard day. What separates those who arrive from those who do not is not speed — it is persistence. Keep going, even slowly. You are closer than you think."
+  },
+  {
+    t: "Believe you can and you're halfway there.",
+    a: "Theodore Roosevelt",
+    r: "Self-belief is not arrogance — it is the fuel that makes action possible. Without it, even the most talented people hesitate and hold back. The moment you genuinely believe something is within your reach, your mind begins finding ways to get there. Half the battle is won in your own head."
+  },
+  {
+    t: "Life is what happens when you're busy making other plans.",
+    a: "John Lennon",
+    r: "We spend so much time preparing for the future that we forget to live the present. The people you love, the morning light, the small joys of today — these are not distractions from your real life. They are your real life. Look up from the plan and live it."
+  },
+  {
+    t: "The only way to do great work is to love what you do.",
+    a: "Steve Jobs",
+    r: "Greatness is rarely forced. It flows from people who care deeply about what they are doing — who would do it even if no one was watching, even if it was hard, even if it took longer than expected. When your work feels like purpose, excellence becomes natural."
+  },
+  {
+    t: "The best time to plant a tree was 20 years ago. The second best time is now.",
+    a: "Chinese Proverb",
+    r: "It is tempting to feel that if you did not start sooner, it is too late. But time only moves forward, and the only moment you ever truly have is this one. Every great journey has a first day. Let today be yours — not someday, not when things settle down. Now."
+  },
+  {
+    t: "Act as if what you do makes a difference. It does.",
+    a: "William James",
+    r: "It is easy to feel small in a big world — to wonder if your kindness, your effort, your choices really matter. They do, more than you know. Every action ripples outward in ways you may never see. Live as if your presence matters, because it absolutely does."
+  },
+  {
+    t: "What you do today can improve all your tomorrows.",
+    a: "Ralph Marston",
+    r: "The future is not something that happens to you — it is something you build, one day at a time. The habits you form, the people you reach out to, the work you put in today — all of it compounds quietly into the life you will be living months and years from now. Today counts."
+  },
 ];
 
 var CATS = [
@@ -449,10 +491,12 @@ function initSplash() {
   curQuote = QUOTES[Math.floor(Math.random()*QUOTES.length)];
   document.getElementById('sqText').textContent = '\u201c' + curQuote.t + '\u201d';
   document.getElementById('sqAuthor').textContent = '\u2014 ' + curQuote.a;
+  var refEl = document.getElementById('sqReflection');
+  if (refEl) refEl.textContent = curQuote.r || '';
 
   // Fix clipboard: use textarea fallback for mobile
   document.getElementById('copyBtn').addEventListener('click', function() {
-    var txt = '\u201c' + curQuote.t + '\u201d \u2014 ' + curQuote.a;
+    var txt = '\u201c' + curQuote.t + '\u201d \u2014 ' + curQuote.a + (curQuote.r ? '\n\n' + curQuote.r : '');
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(txt).then(function() {
         showToast('\u2713 Copied!');
