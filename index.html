@@ -142,6 +142,10 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 /* ── TOAST ── */
 .toast { position:fixed; bottom:5rem; left:50%; transform:translateX(-50%); background:var(--bg3); border:1px solid var(--gold); color:var(--gold); padding:8px 20px; border-radius:40px; font-size:12px; z-index:9999; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
 .toast.show { opacity:1; }
+/* ── MONTH COPY ── */
+.month-header { display:flex; align-items:center; justify-content:space-between; }
+.month-copy-btn { background:transparent; border:1px solid rgba(201,168,76,0.3); border-radius:6px; color:var(--gold); font-size:10px; padding:2px 8px; cursor:pointer; font-family:'Open Sans',sans-serif; opacity:0.7; }
+.month-copy-btn:hover { opacity:1; background:rgba(201,168,76,0.1); }
 </style>
 </head>
 <body class="theme-light">
@@ -575,6 +579,57 @@ function getFiltered() {
   return results;
 }
 
+function copyMonth(year, month) {
+  // Respect current category filter — only copy what user is viewing
+  var savedTime = timeFilter;
+  timeFilter = 'all';
+  var allItems = getFiltered().filter(function(item) {
+    return item.date.getFullYear() === year && item.date.getMonth() === month;
+  });
+  timeFilter = savedTime;
+
+  if (!allItems.length) { showToast('No events in ' + MONTHS[month]); return; }
+
+  var lines = ['📅 ' + MONTHS[month] + ' ' + year, ''];
+  var lastDay = -1;
+  for (var i = 0; i < allItems.length; i++) {
+    var item = allItems[i];
+    var e = item.ev;
+    var d = item.date;
+    if (d.getDate() !== lastDay) {
+      if (lastDay !== -1) lines.push('');
+      lines.push(DNAMES[d.getDay()] + ' ' + MONTHS_S[d.getMonth()] + ' ' + d.getDate());
+      lastDay = d.getDate();
+    }
+    var cat = getCat(e.category);
+    var name = stripEmoji(e.name);
+    var time = e.time ? ' · ' + fmtTime(e.time) : '';
+    var note = e.notes ? ' (' + e.notes + ')' : '';
+    var age  = e.birthYear ? ' — turns ' + (year - parseInt(e.birthYear)) : '';
+    lines.push('  ' + cat.label.split(' ')[0] + ' ' + name + time + age + note);
+  }
+
+  var txt = lines.join('\n');
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(txt).then(function() {
+      showToast('✓ ' + MONTHS[month] + ' copied!');
+    }).catch(function() { fallbackCopy2(txt, month); });
+  } else {
+    fallbackCopy2(txt, month);
+  }
+}
+
+function fallbackCopy2(txt, month) {
+  var ta = document.createElement('textarea');
+  ta.value = txt;
+  ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try { document.execCommand('copy'); showToast('✓ ' + MONTHS[month] + ' copied!'); }
+  catch(e) { showToast('Long-press to copy'); }
+  document.body.removeChild(ta);
+}
+
 function stripEmoji(name) {
   return name.replace(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})\s*/u, '').trim();
 }
@@ -593,7 +648,7 @@ function render() {
   var html='';
   for(var mi=0;mi<monthOrder.length;mi++){
     var mg=months[monthOrder[mi]];
-    html+='<div class="month-header">'+MONTHS[mg.m]+' '+mg.y+'</div>';
+    html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class="month-copy-btn" onclick="copyMonth('+mg.y+','+mg.m+')">⧉ Copy</button></div>';
     for(var ii=0;ii<mg.items.length;ii++){
       var item=mg.items[ii],e=item.ev,d=item.date,cat=getCat(e.category);
       var isToday=d.getTime()===now.getTime();
