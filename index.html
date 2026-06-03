@@ -141,10 +141,6 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 .btn-cancel-m { padding:9px 18px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); font-family:'Open Sans',sans-serif; font-size:14px; cursor:pointer; }
 
 
-/* ── FAB ── */
-.fab { position:fixed; bottom:90px; right:1.25rem; width:56px; height:56px; border-radius:50%; background:var(--gold); border:none; color:#0d1117; font-size:28px; font-weight:700; cursor:pointer; display:none; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(0,0,0,0.3); z-index:200; touch-action:manipulation; transition:transform .15s; }
-.fab:active { transform:scale(0.93); }
-
 /* toast uses inline styles */
 /* ── MONTH ACTION ── */
 .maction-btn { background:transparent; border:none; color:var(--gold); font-size:18px; cursor:pointer; padding:2px 8px; line-height:1; touch-action:manipulation; }
@@ -865,6 +861,8 @@ function doSignOut() {
   updateAuthUI(false);
   document.getElementById('signinScreen').classList.remove('hidden');
   document.getElementById('app').style.display = 'none';
+  var fab = document.getElementById('fab');
+  if (fab) fab.style.display = 'none';
 }
 
 function scheduleTokenRefresh(secondsUntilRefresh) {
@@ -885,9 +883,16 @@ function fetchUserInfo() {
 }
 
 function onSignedIn() {
+  var splash = document.getElementById('splash');
+  if (splash) { splash.classList.add('hidden'); splash.style.display = 'none'; }
   document.getElementById('signinScreen').classList.add('hidden');
   document.getElementById('app').style.display = '';
+  document.getElementById('app').classList.add('show');
+  var fab = document.getElementById('fab');
+  if (fab) fab.style.display = 'flex';
   updateAuthUI(true);
+  buildCatStrip();
+  render();
   loadFromFirestore();
 }
 
@@ -897,7 +902,6 @@ function updateAuthUI(signedIn) {
   var syncBtn = document.getElementById('syncNavBtn');
   if (signedIn && _user) {
     if (addBtn)  addBtn.style.display  = '';
-    var fab=document.getElementById('fabBtn'); if(fab) fab.style.display='flex';
     if (syncBtn) syncBtn.style.display = '';
     var admin = _user.email === ADMIN_EMAIL;
     chip.style.display = 'flex';
@@ -911,7 +915,6 @@ function updateAuthUI(signedIn) {
       '</div>';
   } else {
     if (addBtn)  addBtn.style.display  = 'none';
-    var fab=document.getElementById('fabBtn'); if(fab) fab.style.display='none';
     if (syncBtn) syncBtn.style.display = 'none';
     chip.style.display = 'none';
     chip.innerHTML = '';
@@ -950,32 +953,34 @@ function fsRead(docPath, cb) {
 function isAdmin() { return _user && _user.email === ADMIN_EMAIL; }
 
 function loadFromFirestore() {
-  // Load public admin events (visible to all users)
-  fsRead('chronos/adminEvents', function(adminEvts) {
-    var personal = events.filter(function(e) { return !e.isAdmin; });
-    if (adminEvts && adminEvts.length) {
-      var adminMarked = adminEvts.map(function(e) { e.isAdmin = true; e.isPublic = true; return e; });
-      events = personal.concat(adminMarked);
-    } else {
-      events = personal;
-    }
-    try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
-    render();
-  });
-  // Load user's own private events
-  if (_user) {
-    var uid = btoa(_user.email).replace(/=/g,'');
-    fsRead('chronos/users_' + uid, function(userEvts) {
-      var pub = events.filter(function(e) { return e.isAdmin && e.isPublic; });
+  if (!_token || !_user) return;
+  var uid = btoa(_user.email).replace(/=/g,'');
+
+  // Step 1: load user's personal events
+  fsRead('chronos/users_' + uid, function(userEvts) {
+    // Step 2: load public admin events
+    fsRead('chronos/adminEvents', function(adminEvts) {
+      var personal = [];
       if (userEvts && userEvts.length) {
-        events = pub.concat(userEvts);
-      } else {
-        events = pub;
+        personal = userEvts.filter(function(e){ return !e.isAdmin; });
       }
-      try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
+      var admin = [];
+      if (adminEvts && adminEvts.length) {
+        admin = adminEvts.map(function(e){ e.isAdmin=true; e.isPublic=true; return e; });
+      }
+      // Also keep any local lunar/solar seed events not in cloud yet
+      var seeded = events.filter(function(e){
+        return e.id && e.id.indexOf('lp') === 0 || (e.id && e.id.indexOf('sol') === 0) || (e.id && e.id.indexOf('q') === 0);
+      });
+      var cloudIds = {};
+      personal.forEach(function(e){ cloudIds[e.id]=true; });
+      admin.forEach(function(e){ cloudIds[e.id]=true; });
+      var unseeded = seeded.filter(function(e){ return !cloudIds[e.id]; });
+      events = personal.concat(admin).concat(unseeded);
+      try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(ex){}
       render();
     });
-  }
+  });
 }
 
 function syncNow() {
@@ -1367,6 +1372,8 @@ if (!restoreSession()) {
   </div>
 </div>
 
-<button class="fab" id="fabBtn" onclick="openModal()">＋</button>
+
+<!-- Floating Action Button — always in DOM like Commonplace -->
+<button id="fab" onclick="openModal()" style="position:fixed;bottom:80px;right:20px;width:56px;height:56px;border-radius:50%;background:var(--gold);border:none;color:#0d1117;font-size:32px;font-weight:900;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.35);z-index:300;touch-action:manipulation;line-height:1;">＋</button>
 </body>
 </html>
