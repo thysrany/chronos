@@ -161,7 +161,6 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
     <button class="btn-ghost" onclick="copyQuote()">⧉ Copy & Share</button>
     <button class="btn-gold" onclick="enterApp()">Enter →</button>
   </div>
-  <div id="toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2a4a;border:2px solid #c9a84c;color:#c9a84c;padding:12px 28px;border-radius:40px;font-size:15px;font-weight:700;z-index:999999;pointer-events:none;opacity:0;transition:opacity 0.3s;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,0.5)"></div>
 </div>
 
 <!-- SIGN-IN SCREEN -->
@@ -636,7 +635,7 @@ function getFiltered() {
   return results;
 }
 
-function copyMonth(year, month) {
+function copyMonth(year, month, btn) {
   // Respect current category filter — only copy what user is viewing
   var savedTime = timeFilter;
   timeFilter = 'all';
@@ -667,13 +666,8 @@ function copyMonth(year, month) {
   }
 
   var txt = lines.join('\n');
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(txt).then(function() {
-      showToast('✓ ' + MONTHS[month] + ' copied!');
-    }).catch(function() { fallbackCopy2(txt, month); });
-  } else {
-    fallbackCopy2(txt, month);
-  }
+  // Use confirmed working method - button gives feedback
+  fallbackCopy2(txt, month, btn);
 }
 
 function fallbackCopy2(txt, month) {
@@ -705,7 +699,7 @@ function render() {
   var html='';
   for(var mi=0;mi<monthOrder.length;mi++){
     var mg=months[monthOrder[mi]];
-    html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class="month-copy-btn" onclick="copyMonth('+mg.y+','+mg.m+')">⧉ Copy</button></div>';
+    html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class="month-copy-btn" onclick="copyMonth('+mg.y+','+mg.m+',this)">⧉ Copy</button></div>';
     for(var ii=0;ii<mg.items.length;ii++){
       var item=mg.items[ii],e=item.ev,d=item.date,cat=getCat(e.category);
       var isToday=d.getTime()===now.getTime();
@@ -1015,5 +1009,6 @@ if (!restoreSession()) {
   document.getElementById('signinScreen').classList.remove('hidden');
 }
 </script>
+<div id="toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2a4a;border:2px solid #c9a84c;color:#c9a84c;padding:12px 28px;border-radius:40px;font-size:15px;font-weight:700;z-index:999999;pointer-events:none;opacity:0;transition:opacity 0.3s;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,0.5)"></div>
 </body>
 </html>
