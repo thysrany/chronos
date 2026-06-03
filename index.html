@@ -621,23 +621,20 @@ function getFiltered() {
 }
 
 
-// Universal copy — exact method from SpeakDeck (confirmed working on device)
 function copyText(text, onSuccess, onFail) {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(onSuccess).catch(function() { fallback(); });
-  } else { fallback(); }
-  function fallback() {
-    try {
-      var ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none';
-      document.body.appendChild(ta);
-      ta.focus(); ta.select();
-      ta.setSelectionRange(0, 99999);
-      var ok = document.execCommand('copy');
-      document.body.removeChild(ta);
-      if (ok) onSuccess(); else onFail();
-    } catch(e) { onFail(); }
+  // Try clipboard API first
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(function() {
+      if (onSuccess) onSuccess();
+    }).catch(function() {
+      // Fallback: show popup for manual copy
+      showCopyPopup(text);
+      if (onSuccess) onSuccess();
+    });
+  } else {
+    // Show popup for manual copy
+    showCopyPopup(text);
+    if (onSuccess) onSuccess();
   }
 }
 
@@ -1088,6 +1085,17 @@ function startEditEvent() {
   document.getElementById('overlay').classList.add('show');
 }
 
+
+function showCopyPopup(txt) {
+  var el = document.getElementById('copyPopupText');
+  el.value = txt;
+  document.getElementById('copyPopup').style.display = 'block';
+  setTimeout(function() { el.focus(); el.select(); el.setSelectionRange(0, 99999); }, 100);
+}
+function closeCopyPopup() {
+  document.getElementById('copyPopup').style.display = 'none';
+}
+
 // ── INIT ─────────────────────────────────────────────
 loadTheme();
 loadEvents();
@@ -1112,6 +1120,18 @@ if (!restoreSession()) {
       <button onclick="deleteEventFromSheet()" style="padding:12px;border-radius:8px;border:1px solid var(--red);background:transparent;color:var(--red);font-family:inherit;font-size:14px;cursor:pointer;text-align:left;">🗑️ Delete</button>
       <button onclick="closeActionSheet()" style="padding:12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;font-size:14px;cursor:pointer;text-align:left;">Cancel</button>
     </div>
+  </div>
+</div>
+
+<!-- COPY POPUP -->
+<div id="copyPopup" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.8);" onclick="closeCopyPopup()">
+  <div style="position:absolute;bottom:0;left:0;right:0;background:var(--bg2);border-radius:16px 16px 0 0;padding:1.25rem;max-width:600px;margin:0 auto;" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
+      <div style="font-size:13px;font-weight:700;color:var(--gold);">Hold &amp; Select All → Copy</div>
+      <button onclick="closeCopyPopup()" style="background:transparent;border:none;color:var(--muted);font-size:20px;cursor:pointer;">×</button>
+    </div>
+    <textarea id="copyPopupText" readonly style="width:100%;height:180px;background:var(--bg3);border:1px solid var(--gold);border-radius:8px;color:var(--text);font-family:'Open Sans',sans-serif;font-size:13px;padding:10px;resize:none;outline:none;-webkit-user-select:text;user-select:text;"></textarea>
+    <div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">Tap the text above → hold → Select All → Copy</div>
   </div>
 </div>
 </body>
