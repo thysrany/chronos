@@ -1183,6 +1183,7 @@ document.getElementById('eventList').addEventListener('click', function(ev) {
 
 
 function copyMonth(year, month) {
+  alert('copyMonth called: ' + year + '/' + month);
   var savedTime = timeFilter;
   timeFilter = 'all';
   var allItems = getFiltered().filter(function(item) {
