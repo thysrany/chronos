@@ -764,6 +764,7 @@ function render() {
     (function(b){
       b.addEventListener('click',function(ev){
         ev.stopPropagation();
+        alert('Button tapped! year=' + b.getAttribute('data-year') + ' month=' + b.getAttribute('data-month'));
         copyMonth(parseInt(b.getAttribute('data-year')),parseInt(b.getAttribute('data-month')),b);
       });
     })(cbs[ci]);
