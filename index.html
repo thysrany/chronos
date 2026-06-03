@@ -739,7 +739,7 @@ function render() {
   var html='';
   for(var mi=0;mi<monthOrder.length;mi++){
     var mg=months[monthOrder[mi]];
-    html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class="month-copy-btn" data-year="'+mg.y+'" data-month="'+mg.m+'">⦿ Copy</button></div>';
+    html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class="month-copy-btn" data-year="'+mg.y+'" data-month="'+mg.m+'">⧉ Hold to Copy</button></div>';
     for(var ii=0;ii<mg.items.length;ii++){
       var item=mg.items[ii],e=item.ev,d=item.date,cat=getCat(e.category);
       var isToday=d.getTime()===now.getTime();
@@ -1147,14 +1147,34 @@ loadEvents();
 seedLunar();
 initSplash();
 
-// ONE event delegation listener - survives all render() calls
+// Long-press on month copy button — same pattern as SpeakDeck (confirmed working)
+var _pressTimer = null;
+document.getElementById('eventList').addEventListener('touchstart', function(ev) {
+  var btn = ev.target;
+  if (btn && btn.classList && btn.classList.contains('month-copy-btn')) {
+    ev.preventDefault();
+    var y = parseInt(btn.getAttribute('data-year'));
+    var m = parseInt(btn.getAttribute('data-month'));
+    btn.style.opacity = '0.5';
+    _pressTimer = setTimeout(function() {
+      btn.style.opacity = '';
+      copyMonth(y, m, btn);
+    }, 600);
+  }
+}, { passive: false });
+document.getElementById('eventList').addEventListener('touchend', function() {
+  if (_pressTimer) { clearTimeout(_pressTimer); _pressTimer = null; }
+});
+document.getElementById('eventList').addEventListener('touchmove', function() {
+  if (_pressTimer) { clearTimeout(_pressTimer); _pressTimer = null; }
+});
+// Desktop: regular click
 document.getElementById('eventList').addEventListener('click', function(ev) {
   var btn = ev.target;
   if (btn && btn.classList && btn.classList.contains('month-copy-btn')) {
-    ev.stopPropagation();
-    var y = parseInt(btn.getAttribute('data-year'));
-    var m = parseInt(btn.getAttribute('data-month'));
-    copyMonth(y, m, btn);
+    if (!('ontouchstart' in window)) {
+      copyMonth(parseInt(btn.getAttribute('data-year')), parseInt(btn.getAttribute('data-month')), btn);
+    }
   }
 });
 
