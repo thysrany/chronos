@@ -891,61 +891,71 @@ function doSignIn() {
     _tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: 'profile email https://www.googleapis.com/auth/datastore',
-      callback: function(resp) {
-        if (resp.error) { return; }
-        _token = resp.access_token;
-        var exp = Date.now() + (resp.expires_in - 300) * 1000;
-        localStorage.setItem('ch_token', _token);
-        localStorage.setItem('ch_token_exp', exp);
-        scheduleTokenRefresh(resp.expires_in - 300);
-        // Only fetch user info if not already signed in
-        if (!_user) {
-          fetchUserInfo();
-        }
-      }
+      callback: onTokenResponse
     });
   }
   _tokenClient.requestAccessToken({ prompt: '' });
 }
 
+function onTokenResponse(resp) {
+  if (resp.error) return;
+  _token = resp.access_token;
+  var exp = Date.now() + (resp.expires_in - 300) * 1000;
+  localStorage.setItem('ch_token', _token);
+  localStorage.setItem('ch_token_exp', String(exp));
+  // Schedule silent refresh 5 min before expiry
+  if (_refreshTimer) clearTimeout(_refreshTimer);
+  _refreshTimer = setTimeout(function() {
+    if (_tokenClient) _tokenClient.requestAccessToken({ prompt: '' });
+  }, (resp.expires_in - 300) * 1000);
+  // Only fetch user info on first sign-in
+  if (!_user) {
+    fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: 'Bearer ' + _token }
+    }).then(function(r){ return r.json(); }).then(function(info) {
+      _user = { name: info.name, email: info.email, photo: info.picture };
+      localStorage.setItem('ch_user', JSON.stringify(_user));
+      onSignedIn();
+    });
+  }
+}
+
 function doSignOut() {
   _user = null; _token = null;
+  if (_refreshTimer) clearTimeout(_refreshTimer);
   localStorage.removeItem('ch_token');
   localStorage.removeItem('ch_token_exp');
   localStorage.removeItem('ch_user');
-  if (_refreshTimer) clearTimeout(_refreshTimer);
   updateAuthUI(false);
   document.getElementById('signinScreen').classList.remove('hidden');
   document.getElementById('app').style.display = 'none';
 }
 
-function scheduleTokenRefresh(secondsUntilRefresh) {
-  if (_refreshTimer) clearTimeout(_refreshTimer);
-  if (secondsUntilRefresh <= 0) return;
-  _refreshTimer = setTimeout(function() {
-    // Silent refresh — only update token, don't re-trigger sign-in flow
-    if (_tokenClient && _user) {
-      _tokenClient.requestAccessToken({ prompt: '' });
-    }
-  }, secondsUntilRefresh * 1000);
-}
-
-function fetchUserInfo() {
-  fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-    headers: { Authorization: 'Bearer ' + _token }
-  }).then(function(r) { return r.json(); }).then(function(info) {
-    _user = { name: info.name, email: info.email, photo: info.picture };
-    localStorage.setItem('ch_user', JSON.stringify(_user));
+function restoreSession() {
+  var savedUser = localStorage.getItem('ch_user');
+  var savedToken = localStorage.getItem('ch_token');
+  var savedExp = parseInt(localStorage.getItem('ch_token_exp') || '0');
+  if (savedUser && savedToken && Date.now() < savedExp) {
+    _user  = JSON.parse(savedUser);
+    _token = savedToken;
+    var secsLeft = Math.floor((savedExp - Date.now()) / 1000);
+    if (_refreshTimer) clearTimeout(_refreshTimer);
+    _refreshTimer = setTimeout(function() {
+      if (_tokenClient) _tokenClient.requestAccessToken({ prompt: '' });
+    }, secsLeft * 1000);
     onSignedIn();
-  });
+    return true;
+  }
+  localStorage.removeItem('ch_token');
+  localStorage.removeItem('ch_token_exp');
+  localStorage.removeItem('ch_user');
+  return false;
 }
 
 function onSignedIn() {
-  // Hide splash and sign-in screen
   var splash = document.getElementById('splash');
   if (splash) { splash.classList.add('hidden'); splash.style.display = 'none'; }
   document.getElementById('signinScreen').classList.add('hidden');
-  // Show app
   document.getElementById('app').style.display = '';
   document.getElementById('app').classList.add('show');
   updateAuthUI(true);
@@ -954,30 +964,9 @@ function onSignedIn() {
   loadFromFirestore();
 }
 
-function updateAuthUI(signedIn) {
-  var addBtn  = document.getElementById('addBtn');
-  var chip    = document.getElementById('userChip');
-  var syncBtn = document.getElementById('syncNavBtn');
-  if (signedIn && _user) {
-    if (addBtn)  addBtn.style.display  = '';
-    if (syncBtn) syncBtn.style.display = '';
-    var admin = _user.email === ADMIN_EMAIL;
-    chip.style.display = 'flex';
-    chip.style.alignItems = 'center';
-    chip.style.gap = '6px';
-    chip.innerHTML =
-      (_user.photo ? '<img src="'+_user.photo+'" alt="" style="width:28px;height:28px;border-radius:50%;border:2px solid var(--gold);flex-shrink:0">' : '') +
-      '<div style="display:flex;flex-direction:column;align-items:flex-start;gap:1px">' +
-        (admin ? '<span class="admin-badge">ADMIN</span>' : '<span style="font-size:10px;color:rgba(255,255,255,0.7);max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(_user.name||'').split(' ')[0]+'</span>') +
-        '<button class="signout-btn" style="padding:0;font-size:10px;text-align:left" onclick="doSignOut()">Sign out</button>' +
-      '</div>';
-  } else {
-    if (addBtn)  addBtn.style.display  = 'none';
-    if (syncBtn) syncBtn.style.display = 'none';
-    chip.style.display = 'none';
-    chip.innerHTML = '';
-  }
-}
+function fetchUserInfo() {}
+function scheduleTokenRefresh() {}
+
 
 // ── FIRESTORE REST ────────────────────────────────────
 function fsUrl(docPath) {
