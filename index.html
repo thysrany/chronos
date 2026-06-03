@@ -494,33 +494,29 @@ function initSplash() {
 }
 
 function copyQuote() {
-  if (!curQuote) { showToast('Please wait...'); return; }
+  if (!curQuote) return;
   var txt = '\u201c' + curQuote.t + '\u201d \u2014 ' + curQuote.a + (curQuote.r ? '\n\n' + curQuote.r : '');
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(txt).then(function() {
-      showToast('\u2713 Copied!');
-    }).catch(function() {
-      fallbackCopy(txt);
-    });
-  } else {
-    fallbackCopy(txt);
-  }
-}
-
-function fallbackCopy(txt) {
-  showToast('\u2713 Copied!');
+  var btn = document.getElementById('cpBtn');
+  var orig = btn ? btn.textContent : '';
+  // Single code path — execCommand only, no double feedback
   try {
     var ta = document.createElement('textarea');
     ta.value = txt;
-    ta.setAttribute('readonly', '');
     ta.style.cssText = 'position:fixed;top:0;left:0;width:2px;height:2px;opacity:0;';
     document.body.appendChild(ta);
     ta.focus();
-    ta.setSelectionRange(0, 999999);
-    document.execCommand('copy');
+    ta.setSelectionRange(0, 99999);
+    var ok = document.execCommand('copy');
     document.body.removeChild(ta);
+    if (btn) {
+      btn.textContent = ok ? '\u2713 Copied!' : '\u2717 Try again';
+      btn.style.color = '#c9a84c';
+      setTimeout(function(){ btn.textContent = orig; btn.style.color = ''; }, 2000);
+    }
   } catch(e) {}
 }
+
+// fallbackCopy removed — copyQuote handles copy directly
 
 function goHome() {
   // Reinitialize quote then show splash again
@@ -670,15 +666,24 @@ function copyMonth(year, month, btn) {
   fallbackCopy2(txt, month, btn);
 }
 
-function fallbackCopy2(txt, month) {
-  var ta = document.createElement('textarea');
-  ta.value = txt;
-  ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
-  document.body.appendChild(ta);
-  ta.focus(); ta.select();
-  try { document.execCommand('copy'); showToast('✓ ' + MONTHS[month] + ' copied!'); }
-  catch(e) { showToast('Long-press to copy'); }
-  document.body.removeChild(ta);
+function fallbackCopy2(txt, month, btn) {
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = txt;
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:2px;height:2px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.setSelectionRange(0, 99999);
+    var ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (btn) {
+      btn.textContent = ok ? '\u2713 Copied!' : '\u2717 Failed';
+      btn.style.color = ok ? '#c9a84c' : '#f87171';
+      setTimeout(function(){ btn.textContent = '\u2a47 Copy'; btn.style.color = ''; }, 2000);
+    }
+  } catch(e) {
+    if (btn) { btn.textContent = '\u2717 Error'; setTimeout(function(){ btn.textContent = '\u2a47 Copy'; }, 2000); }
+  }
 }
 
 function stripEmoji(name) {
