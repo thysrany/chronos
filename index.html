@@ -863,28 +863,7 @@ function openModal(){
   document.getElementById('overlay').classList.add('show');
 }
 function closeModal(){document.getElementById('overlay').classList.remove('show');}
-function overlayClick(e){if(e.target===document.getElementById('overlay'))closeModal();}
-function saveEvent(){
-  var name=document.getElementById('mName').value.trim(),date=document.getElementById('mDate').value;
-  if(!name){alert('Please enter an event name.');return;}
-  if(!date){alert('Please select a date.');return;}
-  var ev = {
-    id:'u'+Date.now(), name:name, date:date,
-    time:document.getElementById('mTime').value,
-    category:selCat, recur:selRecur,
-    notes:document.getElementById('mNotes').value.trim(),
-    birthYear:document.getElementById('mBYear').value||null,
-    bRel:selCat==='birthday'?selBRel:null,
-    isAdmin: isAdmin(),
-    isPublic: isAdmin() ? (selVisibility==='public') : false
-  };
-  if (_editingId) { events = events.filter(function(x){ return x.id !== _editingId; }); _editingId = null; }
-  events.push(ev);
-  try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
-  if (_token && _user) syncNow();
-  closeModal(); render();
-}
-function delEvent(id,e){
+function overlayClick(e){if(e.target===document.getElementById('overlay'))closeModal();}function delEvent(id,e){
   e.stopPropagation();
   if(!confirm('Delete this event?'))return;
   events=events.filter(function(ev){return ev.id!==id;});
@@ -955,9 +934,16 @@ function fetchUserInfo() {
 }
 
 function onSignedIn() {
+  // Hide splash and sign-in screen
+  var splash = document.getElementById('splash');
+  if (splash) { splash.classList.add('hidden'); splash.style.display = 'none'; }
   document.getElementById('signinScreen').classList.add('hidden');
+  // Show app
   document.getElementById('app').style.display = '';
+  document.getElementById('app').classList.add('show');
   updateAuthUI(true);
+  buildCatStrip();
+  render();
   loadFromFirestore();
 }
 
@@ -1614,110 +1600,52 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
   </div>
 </div>
 
-<script>
-var QUOTES = [
-  {
-    t: "The secret of getting ahead is getting started.",
-    a: "Mark Twain",
-    r: "Most of us wait for the perfect moment — the right mood, the right plan, the right conditions. But momentum only comes after the first step, never before it. Whatever you have been putting off, today is enough of a reason to begin. Small starts lead to great finishes."
-  },
-  {
-    t: "In the middle of every difficulty lies opportunity.",
-    a: "Albert Einstein",
-    r: "When life feels hard, it is easy to see only the obstacle in front of you. But every challenge carries within it a seed of something better — a new skill, a stronger character, an unexpected door. The difficulty is not in your way. It is the way."
-  },
-  {
-    t: "The future belongs to those who believe in the beauty of their dreams.",
-    a: "Eleanor Roosevelt",
-    r: "Dreams are not fantasies to be ashamed of — they are blueprints for the life you are capable of living. The people who shape the world are not the most talented or the most lucky. They are the ones who refused to stop believing, even when no one else could see what they saw yet."
-  },
-  {
-    t: "It does not matter how slowly you go as long as you do not stop.",
-    a: "Confucius",
-    r: "Progress does not always look dramatic. Sometimes it is one quiet step forward on a hard day. What separates those who arrive from those who do not is not speed — it is persistence. Keep going, even slowly. You are closer than you think."
-  },
-  {
-    t: "Believe you can and you're halfway there.",
-    a: "Theodore Roosevelt",
-    r: "Self-belief is not arrogance — it is the fuel that makes action possible. Without it, even the most talented people hesitate and hold back. The moment you genuinely believe something is within your reach, your mind begins finding ways to get there. Half the battle is won in your own head."
-  },
-  {
-    t: "Life is what happens when you're busy making other plans.",
-    a: "John Lennon",
-    r: "We spend so much time preparing for the future that we forget to live the present. The people you love, the morning light, the small joys of today — these are not distractions from your real life. They are your real life. Look up from the plan and live it."
-  },
-  {
-    t: "The only way to do great work is to love what you do.",
-    a: "Steve Jobs",
-    r: "Greatness is rarely forced. It flows from people who care deeply about what they are doing — who would do it even if no one was watching, even if it was hard, even if it took longer than expected. When your work feels like purpose, excellence becomes natural."
-  },
-  {
-    t: "The best time to plant a tree was 20 years ago. The second best time is now.",
-    a: "Chinese Proverb",
-    r: "It is tempting to feel that if you did not start sooner, it is too late. But time only moves forward, and the only moment you ever truly have is this one. Every great journey has a first day. Let today be yours — not someday, not when things settle down. Now."
-  },
-  {
-    t: "Act as if what you do makes a difference. It does.",
-    a: "William James",
-    r: "It is easy to feel small in a big world — to wonder if your kindness, your effort, your choices really matter. They do, more than you know. Every action ripples outward in ways you may never see. Live as if your presence matters, because it absolutely does."
-  },
-  {
-    t: "What you do today can improve all your tomorrows.",
-    a: "Ralph Marston",
-    r: "The future is not something that happens to you — it is something you build, one day at a time. The habits you form, the people you reach out to, the work you put in today — all of it compounds quietly into the life you will be living months and years from now. Today counts."
-  },
-];
 
-var CATS = [
-  { id:'lunar-solar',     label:'🌙☀️ Moon & Sun',  color:'#93c5fd' },
-  { id:'birthday',        label:'🎂 Birthday',      color:'#f472b6' },
-  { id:'events',          label:'🎊 Events',        color:'#a78bfa' },
-  { id:'life',            label:'💼 Life',           color:'#34d399' },
-  { id:'other',           label:'📌 Other',         color:'#94a3b8' },
-];
+<div id="toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2a4a;border:2px solid #c9a84c;color:#c9a84c;padding:12px 28px;border-radius:40px;font-size:15px;font-weight:700;z-index:999999;pointer-events:none;opacity:0;transition:opacity 0.3s;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,0.5)"></div>
 
-var THEMES = [
-  { id:'theme-dark',     label:'Dark',     bg:'#0d1117', accent:'#c9a84c' },
-  { id:'theme-light',    label:'Light',    bg:'#f5f5f0', accent:'#b8900a' },
-  { id:'theme-sepia',    label:'Sepia',    bg:'#f4ede0', accent:'#c47c00' },
-  { id:'theme-midnight', label:'Midnight', bg:'#06060f', accent:'#9090ff' },
-  { id:'theme-forest',   label:'Forest',   bg:'#0d1a0f', accent:'#90c840' },
-];
+<!-- EVENT ACTION SHEET -->
+<div id="actionSheet" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.7);" onclick="closeActionSheet()">
+  <div style="position:absolute;bottom:0;left:0;right:0;background:var(--bg2);border-radius:16px 16px 0 0;padding:1.25rem;max-width:600px;margin:0 auto;" onclick="event.stopPropagation()">
+    <div id="asTitle" style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;"></div>
+    <div id="asMeta" style="font-size:12px;color:var(--muted);margin-bottom:1.25rem;line-height:1.5;"></div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button onclick="startEditEvent()" style="padding:12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:14px;cursor:pointer;text-align:left;">✏️ Edit</button>
+      <button onclick="deleteEventFromSheet()" style="padding:12px;border-radius:8px;border:1px solid var(--red);background:transparent;color:var(--red);font-family:inherit;font-size:14px;cursor:pointer;text-align:left;">🗑️ Delete</button>
+      <button onclick="closeActionSheet()" style="padding:12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;font-size:14px;cursor:pointer;text-align:left;">Cancel</button>
+    </div>
+  </div>
+</div>
 
-var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-var DNAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-var MONTHS_S = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+<!-- MONTH ACTION SHEET -->
+<div id="monthSheet" style="display:none;position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,0.7);" onclick="closeMonthSheet()">
+  <div style="position:absolute;bottom:0;left:0;right:0;max-width:600px;margin:0 auto;background:var(--bg2);border-radius:16px 16px 0 0;padding:1.5rem;" onclick="event.stopPropagation()">
+    <div id="monthSheetTitle" style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:1.25rem;text-align:center;"></div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button id="monthCopyBtn" style="padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:'Open Sans',sans-serif;font-size:15px;cursor:pointer;touch-action:manipulation;">⧉ Copy to clipboard</button>
+      <button id="monthShareBtn" style="padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:'Open Sans',sans-serif;font-size:15px;cursor:pointer;touch-action:manipulation;">↑ Share</button>
+      <button onclick="closeMonthSheet()" style="padding:12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Open Sans',sans-serif;font-size:14px;cursor:pointer;">Cancel</button>
+    </div>
+  </div>
+</div>
 
-var events = [];
-var timeFilter = 'upcoming';
-var catFilter  = 'all';
-var selCat     = 'lunar';
-var selRecur   = 'once';
-var selBRel    = 'friend';
-var selVisibility = 'private';
-var curQuote   = null;
-var curTheme   = 'theme-light';
-
-var LUNAR_DATA = [
-  {id:'lp01',name:'🌑 New Moon',      date:'2025-01-29',time:'07:36',notes:''},
-  {id:'lp02',name:'🌓 First Quarter', date:'2025-02-05',time:'08:02',notes:''},
-  {id:'lp03',name:'🌕 Full Moon',     date:'2025-02-12',time:'13:53',notes:'Snow Moon'},
-  {id:'lp04',name:'🌗 Last Quarter',  date:'2025-02-20',time:'17:32',notes:''},
-  {id:'lp05',name:'🌑 New Moon',      date:'2025-02-28',time:'00:44',notes:''},
-  {id:'lp06',name:'🌓 First Quarter', date:'2025-03-06',time:'16:32',notes:''},
-  {id:'lp07',name:'🌕 Full Moon',     date:'2025-03-14',time:'06:55',notes:'Worm Moon'},
-  {id:'lp08',name:'🌗 Last Quarter',  date:'2025-03-22',time:'07:30',notes:''},
-  {id:'lp09',name:'🌑 New Moon',      date:'2025-03-29',time:'10:57',notes:''},
-  {id:'lp10',name:'🌓 First Quarter', date:'2025-04-05',time:'02:15',notes:''},
-  {id:'lp11',name:'🌕 Full Moon',     date:'2025-04-13',time:'00:22',notes:'Pink Moon'},
-  {id:'lp12',name:'🌗 Last Quarter',  date:'2025-04-21',time:'01:36',notes:''},
-  {id:'lp13',name:'🌑 New Moon',      date:'2025-04-27',time:'19:31',notes:''},
-  {id:'lp14',name:'🌓 First Quarter', date:'2025-05-04',time:'13:52',notes:''},
-  {id:'lp15',name:'🌕 Full Moon',     date:'2025-05-12',time:'16:56',notes:'Flower Moon'},
-  {id:'lp16',name:'🌗 Last Quarter',  date:'2025-05-20',time:'11:59',notes:''},
-  {id:'lp17',name:'🌑 New Moon',      date:'2025-05-27',time:'03:02',notes:''},
-  {id:'lp18',name:'🌓 First Quarter', date:'2025-06-03',time:'03:41',notes:''},
-  {id:'lp19',name:'🌕 Full Moon',     date:'2025-06-11',time:'07:44',notes:'Strawberry Moon'},
-  {id:'lp20',name:'🌗 Last Quarter',  date:'2025-06-18',time:'23:19',notes:''},
-  {id:'lp21',name:'🌑 New Moon',      date:'2025-06-25',time:'10:31',notes:''},
-  {id:'lp22',name:'🌓 First Quarter', date:'202
+<!-- EDIT SHEET -->
+<div id="editSheet" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.6);" onclick="closeEditSheet()">
+  <div style="position:absolute;bottom:0;left:0;right:0;max-width:600px;margin:0 auto;background:var(--bg2);border-radius:16px 16px 0 0;padding:1.25rem;" onclick="event.stopPropagation()">
+    <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:1rem;" id="editSheetTitle"></div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <input id="es-name"  class="finput" placeholder="Event name"/>
+      <div style="display:flex;gap:8px;">
+        <input id="es-date"  class="finput" type="date" style="flex:1"/>
+        <input id="es-time"  class="finput" type="time" style="width:105px;flex:none"/>
+      </div>
+      <input id="es-notes" class="finput" placeholder="Notes (optional)"/>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button onclick="saveEditSheet()"   style="flex:1;padding:11px;border-radius:8px;background:var(--gold);border:none;color:#0d1117;font-family:'Open Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">Save</button>
+        <button onclick="closeEditSheet()"  style="padding:11px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Open Sans',sans-serif;font-size:14px;cursor:pointer;">Cancel</button>
+        <button onclick="deleteEditSheet()" style="padding:11px 16px;border-radius:8px;border:1px solid var(--red);background:transparent;color:var(--red);font-family:'Open Sans',sans-serif;font-size:14px;cursor:pointer;">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
