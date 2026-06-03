@@ -140,6 +140,23 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 .btn-save-m { padding:9px 24px; border-radius:8px; background:var(--gold); border:none; color:#0d1117; font-family:'Open Sans',sans-serif; font-size:14px; font-weight:700; cursor:pointer; }
 .btn-cancel-m { padding:9px 18px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); font-family:'Open Sans',sans-serif; font-size:14px; cursor:pointer; }
 
+
+/* ── CALENDAR VIEW ── */
+.cal-nav { display:flex; align-items:center; justify-content:space-between; padding:10px 1rem; background:var(--bg2); border-bottom:1px solid var(--border); }
+.cal-nav-btn { background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:18px; padding:4px 14px; cursor:pointer; touch-action:manipulation; }
+.cal-month-title { font-size:15px; font-weight:700; color:var(--text); }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); padding:0 4px; }
+.cal-dow { text-align:center; font-size:9px; font-weight:700; color:var(--muted); padding:8px 0 4px; text-transform:uppercase; letter-spacing:.05em; }
+.cal-day { min-height:52px; padding:3px 2px; display:flex; flex-direction:column; align-items:center; border-top:1px solid var(--border); cursor:pointer; }
+.cal-day.other-month { opacity:0.3; }
+.cal-day.today-day .cal-num { background:var(--gold); color:#0d1117; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; }
+.cal-num { font-size:12px; font-weight:600; color:var(--text); line-height:22px; width:22px; text-align:center; }
+.cal-moon { font-size:16px; line-height:1; margin-top:2px; }
+.cal-dot { width:5px; height:5px; border-radius:50%; margin-top:2px; }
+.cal-months { }
+.cal-month-block { margin-bottom:4px; }
+.cal-month-hdr { padding:8px 1rem 4px; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); }
+
 /* toast uses inline styles */
 /* ── MONTH ACTION ── */
 .maction-btn { background:transparent; border:none; color:var(--gold); font-size:18px; cursor:pointer; padding:2px 8px; line-height:1; touch-action:manipulation; }
@@ -429,6 +446,80 @@ var LUNAR_DATA = [
   {id:'lp69',name:'🌑 New Moon',      date:'2026-06-15',time:'02:54',notes:''},
   {id:'lp70',name:'🌓 First Quarter', date:'2026-06-23',time:'16:57',notes:''},
   {id:'lp71',name:'🌕 Full Moon',     date:'2026-06-30',time:'00:57',notes:'Strawberry Moon'},
+  {id:'lp72',name:'🌗 Last Quarter',  date:'2026-07-08',time:'00:29',notes:''},
+  {id:'lp73',name:'🌑 New Moon',      date:'2026-07-14',time:'17:43',notes:''},
+  {id:'lp74',name:'🌓 First Quarter', date:'2026-07-23',time:'00:45',notes:''},
+  {id:'lp75',name:'🌕 Full Moon',     date:'2026-07-29',time:'12:36',notes:'Buck Moon'},
+  {id:'lp76',name:'🌗 Last Quarter',  date:'2026-08-06',time:'12:23',notes:''},
+  {id:'lp77',name:'🌑 New Moon',      date:'2026-08-13',time:'07:36',notes:''},
+  {id:'lp78',name:'🌓 First Quarter', date:'2026-08-21',time:'06:22',notes:''},
+  {id:'lp79',name:'🌕 Full Moon',     date:'2026-08-27',time:'22:26',notes:'Sturgeon Moon'},
+  {id:'lp80',name:'🌗 Last Quarter',  date:'2026-09-04',time:'18:53',notes:''},
+  {id:'lp81',name:'🌑 New Moon',      date:'2026-09-11',time:'20:27',notes:''},
+  {id:'lp82',name:'🌓 First Quarter', date:'2026-09-19',time:'11:43',notes:''},
+  {id:'lp83',name:'🌕 Full Moon',     date:'2026-09-26',time:'06:49',notes:'Harvest Moon'},
+  {id:'lp84',name:'🌗 Last Quarter',  date:'2026-10-04',time:'01:25',notes:''},
+  {id:'lp85',name:'🌑 New Moon',      date:'2026-10-11',time:'07:50',notes:''},
+  {id:'lp86',name:'🌓 First Quarter', date:'2026-10-18',time:'18:13',notes:''},
+  {id:'lp87',name:'🌕 Full Moon',     date:'2026-10-25',time:'14:12',notes:"Hunter's Moon"},
+  {id:'lp88',name:'🌗 Last Quarter',  date:'2026-11-02',time:'09:31',notes:''},
+  {id:'lp89',name:'🌑 New Moon',      date:'2026-11-09',time:'18:02',notes:''},
+  {id:'lp90',name:'🌓 First Quarter', date:'2026-11-17',time:'03:05',notes:''},
+  {id:'lp91',name:'🌕 Full Moon',     date:'2026-11-23',time:'22:53',notes:'Beaver Moon'},
+  {id:'lp92',name:'🌗 Last Quarter',  date:'2026-12-01',time:'22:09',notes:''},
+  {id:'lp93',name:'🌑 New Moon',      date:'2026-12-09',time:'03:52',notes:''},
+  {id:'lp94',name:'🌓 First Quarter', date:'2026-12-16',time:'13:33',notes:''},
+  {id:'lp95',name:'🌕 Full Moon',     date:'2026-12-23',time:'09:28',notes:'Cold Moon'},
+  {id:'lp96',name:'🌗 Last Quarter',  date:'2026-12-31',time:'12:50',notes:''},
+  {id:'lp97',name:'🌑 New Moon',      date:'2027-01-07',time:'13:25',notes:''},
+  {id:'lp98',name:'🌓 First Quarter', date:'2027-01-15',time:'01:34',notes:''},
+  {id:'lp99',name:'🌕 Full Moon',     date:'2027-01-22',time:'01:18',notes:'Wolf Moon'},
+  {id:'lp100',name:'🌗 Last Quarter', date:'2027-01-29',time:'22:57',notes:''},
+  {id:'lp101',name:'🌑 New Moon',     date:'2027-02-06',time:'00:56',notes:''},
+  {id:'lp102',name:'🌓 First Quarter',date:'2027-02-13',time:'16:08',notes:''},
+  {id:'lp103',name:'🌕 Full Moon',    date:'2027-02-20',time:'23:24',notes:'Snow Moon'},
+  {id:'lp104',name:'🌗 Last Quarter', date:'2027-02-28',time:'11:17',notes:''},
+  {id:'lp105',name:'🌑 New Moon',     date:'2027-03-08',time:'14:29',notes:''},
+  {id:'lp106',name:'🌓 First Quarter',date:'2027-03-15',time:'09:02',notes:''},
+  {id:'lp107',name:'🌕 Full Moon',    date:'2027-03-22',time:'22:43',notes:'Worm Moon'},
+  {id:'lp108',name:'🌗 Last Quarter', date:'2027-03-30',time:'03:00',notes:''},
+  {id:'lp109',name:'🌑 New Moon',     date:'2027-04-07',time:'07:03',notes:''},
+  {id:'lp110',name:'🌓 First Quarter',date:'2027-04-14',time:'02:35',notes:''},
+  {id:'lp111',name:'🌕 Full Moon',    date:'2027-04-21',time:'18:28',notes:'Pink Moon'},
+  {id:'lp112',name:'🌗 Last Quarter', date:'2027-04-28',time:'18:19',notes:''},
+  {id:'lp113',name:'🌑 New Moon',     date:'2027-05-06',time:'21:59',notes:''},
+  {id:'lp114',name:'🌓 First Quarter',date:'2027-05-13',time:'20:43',notes:''},
+  {id:'lp115',name:'🌕 Full Moon',    date:'2027-05-21',time:'10:59',notes:'Flower Moon'},
+  {id:'lp116',name:'🌗 Last Quarter', date:'2027-05-28',time:'08:00',notes:''},
+  {id:'lp117',name:'🌑 New Moon',     date:'2027-06-05',time:'10:57',notes:''},
+  {id:'lp118',name:'🌓 First Quarter',date:'2027-06-12',time:'14:37',notes:''},
+  {id:'lp119',name:'🌕 Full Moon',    date:'2027-06-20',time:'00:57',notes:'Strawberry Moon'},
+  {id:'lp120',name:'🌗 Last Quarter', date:'2027-06-26',time:'20:56',notes:''},
+  {id:'lp121',name:'🌑 New Moon',     date:'2027-07-04',time:'22:02',notes:''},
+  {id:'lp122',name:'🌓 First Quarter',date:'2027-07-12',time:'07:38',notes:''},
+  {id:'lp123',name:'🌕 Full Moon',    date:'2027-07-19',time:'12:44',notes:'Buck Moon'},
+  {id:'lp124',name:'🌗 Last Quarter', date:'2027-07-26',time:'07:55',notes:''},
+  {id:'lp125',name:'🌑 New Moon',     date:'2027-08-03',time:'07:25',notes:''},
+  {id:'lp126',name:'🌓 First Quarter',date:'2027-08-10',time:'23:13',notes:''},
+  {id:'lp127',name:'🌕 Full Moon',    date:'2027-08-17',time:'23:29',notes:'Sturgeon Moon'},
+  {id:'lp128',name:'🌗 Last Quarter', date:'2027-08-24',time:'19:27',notes:''},
+  {id:'lp129',name:'🌑 New Moon',     date:'2027-09-01',time:'15:41',notes:''},
+  {id:'lp130',name:'🌓 First Quarter',date:'2027-09-09',time:'13:29',notes:''},
+  {id:'lp131',name:'🌕 Full Moon',    date:'2027-09-16',time:'10:04',notes:'Harvest Moon'},
+  {id:'lp132',name:'🌗 Last Quarter', date:'2027-09-23',time:'08:23',notes:''},
+  {id:'lp133',name:'🌑 New Moon',     date:'2027-09-30',time:'23:36',notes:''},
+  {id:'lp134',name:'🌓 First Quarter',date:'2027-10-09',time:'02:32',notes:''},
+  {id:'lp135',name:'🌕 Full Moon',    date:'2027-10-15',time:'21:48',notes:"Hunter's Moon"},
+  {id:'lp136',name:'🌗 Last Quarter', date:'2027-10-22',time:'22:57',notes:''},
+  {id:'lp137',name:'🌑 New Moon',     date:'2027-10-30',time:'08:35',notes:''},
+  {id:'lp138',name:'🌓 First Quarter',date:'2027-11-07',time:'14:00',notes:''},
+  {id:'lp139',name:'🌕 Full Moon',    date:'2027-11-14',time:'11:28',notes:'Beaver Moon'},
+  {id:'lp140',name:'🌗 Last Quarter', date:'2027-11-21',time:'15:01',notes:''},
+  {id:'lp141',name:'🌑 New Moon',     date:'2027-11-28',time:'19:25',notes:''},
+  {id:'lp142',name:'🌓 First Quarter',date:'2027-12-07',time:'00:18',notes:''},
+  {id:'lp143',name:'🌕 Full Moon',    date:'2027-12-14',time:'03:02',notes:'Cold Moon'},
+  {id:'lp144',name:'🌗 Last Quarter', date:'2027-12-21',time:'08:11',notes:''},
+  {id:'lp145',name:'🌑 New Moon',     date:'2027-12-28',time:'08:13',notes:''},
 ];
 
 // ── STORAGE ──────────────────────────────────────────
@@ -445,10 +536,14 @@ var SOLAR_DATA = [
   {id:'sol06',name:'☀️ Summer Solstice', date:'2026-06-21',time:'08:24',notes:'Longest day of the year'},
   {id:'sol07',name:'🍂 Autumn Equinox',  date:'2026-09-23',time:'00:05',notes:'Day and night equal length'},
   {id:'sol08',name:'❄️ Winter Solstice', date:'2026-12-21',time:'20:50',notes:'Shortest day of the year'},
+  {id:'sol09',name:'🌸 Spring Equinox',  date:'2027-03-20',time:'20:24',notes:'Day and night equal length'},
+  {id:'sol10',name:'☀️ Summer Solstice', date:'2027-06-21',time:'14:11',notes:'Longest day of the year'},
+  {id:'sol11',name:'🍂 Autumn Equinox',  date:'2027-09-23',time:'06:02',notes:'Day and night equal length'},
+  {id:'sol12',name:'❄️ Winter Solstice', date:'2027-12-22',time:'02:43',notes:'Shortest day of the year'},
 ];
 
 function seedLunar() {
-  if (localStorage.getItem('ch4d_seeded')) return;
+  if (localStorage.getItem('ch4d_seeded2')) return;
   events = LUNAR_DATA.map(function(e) {
     return {id:e.id,name:e.name,date:e.date,time:e.time,category:'lunar',recur:'once',notes:e.notes,birthYear:null};
   });
@@ -457,7 +552,7 @@ function seedLunar() {
   });
   events = events.concat(solarEvents);
   saveEventsLocal();
-  localStorage.setItem('ch4d_seeded','1');
+  localStorage.setItem('ch4d_seeded2','1');
 }
 
 // ── THEME ─────────────────────────────────────────────
@@ -1281,6 +1376,142 @@ function openEdit(id) {
   var vRow=document.getElementById('visibilityRow');
   if(vRow) vRow.style.display=isAdmin()?'block':'none';
   document.getElementById('overlay').classList.add('show');
+}
+
+
+var _calDate = new Date();
+_calDate.setDate(1);
+
+function showCalView() {
+  // Toggle: if already showing, go back to list
+  var cv = document.getElementById('calView');
+  var el = document.getElementById('eventList');
+  var tab = document.getElementById('calTab');
+  if (cv.style.display !== 'none') {
+    cv.style.display = 'none';
+    el.style.display = '';
+    if (tab) tab.classList.remove('on');
+    return;
+  }
+  // Hide list, show cal
+  el.style.display = 'none';
+  cv.style.display = 'block';
+  if (tab) tab.classList.add('on');
+  renderCalView();
+}
+
+function renderCalView() {
+  var cv = document.getElementById('calView');
+  if (!cv || cv.style.display === 'none') return;
+  var html = '<div class="cal-nav">' +
+    '<button class="cal-nav-btn" onclick="calMove(-1)">‹</button>' +
+    '<div class="cal-month-title">' + MONTHS[_calDate.getMonth()] + ' ' + _calDate.getFullYear() + '</div>' +
+    '<button class="cal-nav-btn" onclick="calMove(1)">›</button>' +
+    '</div>';
+
+  // Build 3-month view: prev, current, next
+  var months = [];
+  for (var mo = -1; mo <= 2; mo++) {
+    var d = new Date(_calDate.getFullYear(), _calDate.getMonth() + mo, 1);
+    months.push(d);
+  }
+
+  months.forEach(function(monthStart) {
+    var y = monthStart.getFullYear();
+    var m = monthStart.getMonth();
+    var today = today0();
+
+    html += '<div class="cal-month-block">';
+    html += '<div class="cal-month-hdr">' + MONTHS[m] + ' ' + y + '</div>';
+    html += '<div class="cal-grid">';
+
+    // Day of week headers
+    ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(function(d) {
+      html += '<div class="cal-dow">' + d + '</div>';
+    });
+
+    // Find moon phases for this month
+    var moonMap = {};
+    events.forEach(function(e) {
+      if (e.category !== 'lunar') return;
+      var d = new Date(e.date + 'T00:00:00');
+      if (d.getFullYear() === y && d.getMonth() === m) {
+        var icon = e.name.indexOf('🌑') >= 0 ? '🌑' :
+                   e.name.indexOf('🌓') >= 0 ? '🌓' :
+                   e.name.indexOf('🌕') >= 0 ? '🌕' :
+                   e.name.indexOf('🌗') >= 0 ? '🌗' : '';
+        moonMap[d.getDate()] = icon;
+      }
+    });
+
+    // Find other events for dots
+    var evMap = {};
+    events.forEach(function(e) {
+      if (e.category === 'lunar' || e.category === 'solar') return;
+      var d = new Date(e.date + 'T00:00:00');
+      if (d.getFullYear() === y && d.getMonth() === m) {
+        var cat = getCat(e.category);
+        if (!evMap[d.getDate()]) evMap[d.getDate()] = [];
+        evMap[d.getDate()].push(cat.color);
+      }
+    });
+
+    // Solar events
+    var solarMap = {};
+    events.forEach(function(e) {
+      if (e.category !== 'solar') return;
+      var d = new Date(e.date + 'T00:00:00');
+      if (d.getFullYear() === y && d.getMonth() === m) {
+        var icon = e.name.indexOf('🌸') >= 0 ? '🌸' :
+                   e.name.indexOf('☀️') >= 0 ? '☀️' :
+                   e.name.indexOf('🍂') >= 0 ? '🍂' :
+                   e.name.indexOf('❄️') >= 0 ? '❄️' : '☀️';
+        solarMap[d.getDate()] = icon;
+      }
+    });
+
+    // Grid start — pad to first day of week
+    var firstDow = monthStart.getDay();
+    var daysInMonth = new Date(y, m+1, 0).getDate();
+    var daysInPrev  = new Date(y, m, 0).getDate();
+
+    // Previous month padding
+    for (var p = firstDow - 1; p >= 0; p--) {
+      html += '<div class="cal-day other-month"><span class="cal-num">' + (daysInPrev - p) + '</span></div>';
+    }
+
+    // Days in month
+    for (var day = 1; day <= daysInMonth; day++) {
+      var isToday = (new Date(y, m, day).getTime() === today.getTime());
+      html += '<div class="cal-day' + (isToday ? ' today-day' : '') + '">';
+      html += '<span class="cal-num">' + day + '</span>';
+      if (moonMap[day])  html += '<span class="cal-moon">' + moonMap[day] + '</span>';
+      if (solarMap[day]) html += '<span class="cal-moon">' + solarMap[day] + '</span>';
+      if (evMap[day]) {
+        html += '<div style="display:flex;gap:2px;margin-top:2px;flex-wrap:wrap;justify-content:center">';
+        evMap[day].slice(0, 3).forEach(function(color) {
+          html += '<div class="cal-dot" style="background:' + color + '"></div>';
+        });
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+
+    // Next month padding
+    var remaining = (7 - ((firstDow + daysInMonth) % 7)) % 7;
+    for (var n = 1; n <= remaining; n++) {
+      html += '<div class="cal-day other-month"><span class="cal-num">' + n + '</span></div>';
+    }
+
+    html += '</div></div>'; // end grid + month block
+  });
+
+  cv.innerHTML = html;
+}
+
+function calMove(dir) {
+  _calDate.setMonth(_calDate.getMonth() + dir);
+  renderCalView();
 }
 
 // ── INIT ─────────────────────────────────────────────
