@@ -180,6 +180,10 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
     <div class="header-logo-row">
       <div class="logo">🌙 ChronosCalendar</div>
     </div>
+    <div id="copyMonthBar" style="display:none; padding:4px 1rem; background:var(--bg3); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between;">
+      <span id="copyMonthLabel" style="font-size:11px; color:var(--muted);"></span>
+      <button id="copyMonthBtn" onclick="copyCurrentMonth()" style="padding:6px 14px; border-radius:6px; border:1px solid var(--gold); background:transparent; color:var(--gold); font-family:'Open Sans',sans-serif; font-size:12px; font-weight:600; cursor:pointer; touch-action:manipulation;">⧉ Copy</button>
+    </div>
     <div class="header-top">
       <div class="header-left">
         <div id="userChip" style="display:none"></div>
@@ -656,7 +660,7 @@ function copyMonth(year, month, btn) {
   });
   timeFilter = savedTime;
   if (!allItems.length) {
-    if (btn) { btn.textContent = 'No events'; setTimeout(function(){ btn.textContent = 'Share'; }, 2000); }
+    if (btn) { btn.textContent = 'No events'; setTimeout(function(){ btn.textContent = '\u2a47 Copy'; }, 2000); }
     return;
   }
   var lines = [MONTHS[month] + ' ' + year, ''];
@@ -675,30 +679,11 @@ function copyMonth(year, month, btn) {
     lines.push('  ' + name + time + age + note);
   }
   var txt = lines.join('\n');
-
-  // INLINE copy — identical to copyQuote which works
-  var done = false;
-  try {
-    var ta = document.createElement('textarea');
-    ta.value = txt;
-    ta.contentEditable = true;
-    ta.readOnly = false;
-    ta.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:60px;opacity:0.01;z-index:-1;';
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-    ta.setSelectionRange(0, txt.length);
-    done = document.execCommand('copy');
-    document.body.removeChild(ta);
-  } catch(e) { done = false; }
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(txt).then(function(){}).catch(function(){});
-  }
-  if (btn) {
-    btn.textContent = 'Copied!';
-    btn.style.color = '#c9a84c';
-    setTimeout(function(){ btn.textContent = 'Share'; btn.style.color = ''; }, 2000);
-  }
+  var orig = btn ? btn.textContent : '';
+  copyText(txt,
+    function() { if (btn) { btn.textContent = '\u2713 Copied!'; btn.style.color='#c9a84c'; setTimeout(function(){ btn.textContent = orig; btn.style.color=''; }, 2000); } },
+    function() { if (btn) { btn.textContent = '\u2717 Failed';  btn.style.color='#f87171'; setTimeout(function(){ btn.textContent = orig; btn.style.color=''; }, 2000); } }
+  );
 }
 
 function fallbackCopy2(txt, month, btn) {
@@ -759,6 +744,16 @@ function render() {
     }
   }
   list.innerHTML=html;
+  // Update copy bar with first month shown
+  var firstHdr = list.querySelector('.month-header');
+  var bar = document.getElementById('copyMonthBar');
+  var lbl = document.getElementById('copyMonthLabel');
+  if (firstHdr && bar && lbl) {
+    bar.style.display = 'flex';
+    lbl.textContent = firstHdr.querySelector('span') ? firstHdr.querySelector('span').textContent : '';
+    bar.setAttribute('data-year', firstHdr.getAttribute('data-year'));
+    bar.setAttribute('data-month', firstHdr.getAttribute('data-month'));
+  }
 
 }
 
@@ -1140,6 +1135,16 @@ function migrateStorage() {
   }
 }
 
+
+function copyCurrentMonth() {
+  var bar = document.getElementById('copyMonthBar');
+  if (!bar) return;
+  var y = parseInt(bar.getAttribute('data-year'));
+  var m = parseInt(bar.getAttribute('data-month'));
+  var btn = document.getElementById('copyMonthBtn');
+  copyMonth(y, m, btn);
+}
+
 // ── INIT ─────────────────────────────────────────────
 migrateStorage();
 loadTheme();
@@ -1147,27 +1152,7 @@ loadEvents();
 seedLunar();
 initSplash();
 
-// Long-press on month copy button — same pattern as SpeakDeck (confirmed working)
-var _pressTimer = null;
-document.getElementById('eventList').addEventListener('touchstart', function(ev) {
-  var btn = ev.target;
-  if (btn && btn.classList && btn.classList.contains('month-copy-btn')) {
-    ev.preventDefault();
-    var y = parseInt(btn.getAttribute('data-year'));
-    var m = parseInt(btn.getAttribute('data-month'));
-    btn.style.opacity = '0.5';
-    _pressTimer = setTimeout(function() {
-      btn.style.opacity = '';
-      copyMonth(y, m, btn);
-    }, 600);
-  }
-}, { passive: false });
-document.getElementById('eventList').addEventListener('touchend', function() {
-  if (_pressTimer) { clearTimeout(_pressTimer); _pressTimer = null; }
-});
-document.getElementById('eventList').addEventListener('touchmove', function() {
-  if (_pressTimer) { clearTimeout(_pressTimer); _pressTimer = null; }
-});
+
 // Desktop: regular click
 document.getElementById('eventList').addEventListener('click', function(ev) {
   var btn = ev.target;
