@@ -497,25 +497,15 @@ function copyQuote() {
   var txt = '\u201c' + curQuote.t + '\u201d \u2014 ' + curQuote.a + (curQuote.r ? '\n\n' + curQuote.r : '');
   var btn = document.getElementById('cpBtn');
   var orig = btn ? btn.textContent : '';
-  // Single code path — execCommand only, no double feedback
-  try {
-    var ta = document.createElement('textarea');
-    ta.value = txt;
-    ta.style.cssText = 'position:fixed;top:0;left:0;width:2px;height:2px;opacity:0;';
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.setSelectionRange(0, 99999);
-    var ok = document.execCommand('copy');
-    document.body.removeChild(ta);
-    if (btn) {
-      btn.textContent = ok ? '\u2713 Copied!' : '\u2717 Try again';
-      btn.style.color = '#c9a84c';
-      setTimeout(function(){ btn.textContent = orig; btn.style.color = ''; }, 2000);
+  copyText(txt,
+    function() {
+      if (btn) { btn.textContent = '\u2713 Copied!'; btn.style.color = '#c9a84c'; setTimeout(function(){ btn.textContent = orig; btn.style.color = ''; }, 2000); }
+    },
+    function() {
+      if (btn) { btn.textContent = '\u2717 Try again'; btn.style.color = '#f87171'; setTimeout(function(){ btn.textContent = orig; btn.style.color = ''; }, 2000); }
     }
-  } catch(e) {}
+  );
 }
-
-// fallbackCopy removed — copyQuote handles copy directly
 
 function goHome() {
   // Reinitialize quote then show splash again
