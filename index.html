@@ -658,18 +658,14 @@ function copyMonth(year, month, btn) {
     return item.date.getFullYear() === year && item.date.getMonth() === month;
   });
   timeFilter = savedTime;
-
   if (!allItems.length) {
-    if (btn) { btn.textContent = 'No events'; setTimeout(function(){ btn.textContent = '\u2a47 Share'; btn.style.color=''; }, 2000); }
+    if (btn) { btn.textContent = 'No events'; setTimeout(function(){ btn.textContent = 'Share'; btn.style.color=''; }, 2000); }
     return;
   }
-
-  var lines = ['\ud83d\udcc5 ' + MONTHS[month] + ' ' + year, ''];
+  var lines = [MONTHS[month] + ' ' + year, ''];
   var lastDay = -1;
   for (var i = 0; i < allItems.length; i++) {
-    var item = allItems[i];
-    var e = item.ev;
-    var d = item.date;
+    var item = allItems[i], e = item.ev, d = item.date;
     if (d.getDate() !== lastDay) {
       if (lastDay !== -1) lines.push('');
       lines.push(DNAMES[d.getDay()] + ' ' + MONTHS_S[d.getMonth()] + ' ' + d.getDate());
@@ -677,30 +673,18 @@ function copyMonth(year, month, btn) {
     }
     var cat = getCat(e.category);
     var name = stripEmoji(e.name);
-    var time = e.time ? ' \u00b7 ' + fmtTime(e.time) : '';
+    var time = e.time ? ' - ' + fmtTime(e.time) : '';
     var note = e.notes ? ' (' + e.notes + ')' : '';
-    var age  = e.birthYear ? ' \u2014 turns ' + (year - parseInt(e.birthYear)) : '';
-    lines.push('  ' + cat.label.split(' ')[0] + ' ' + name + time + age + note);
+    var age  = e.birthYear ? ' - turns ' + (year - parseInt(e.birthYear)) : '';
+    lines.push('  ' + name + time + age + note);
   }
   var txt = lines.join('\n');
-
-  // Use Web Share API on mobile (native share sheet)
-  if (navigator.share) {
-    navigator.share({ title: MONTHS[month] + ' ' + year, text: txt })
-      .then(function() {
-        if (btn) { btn.textContent = '\u2713 Shared!'; btn.style.color = '#c9a84c'; setTimeout(function(){ btn.textContent = '\u2191 Share'; btn.style.color=''; }, 2000); }
-      })
-      .catch(function() {});
-    return;
-  }
-
-  // Fallback: SpeakDeck copyText
   copyText(txt,
     function() {
-      if (btn) { btn.textContent = '\u2713 Copied!'; btn.style.color = '#c9a84c'; setTimeout(function(){ btn.textContent = '\u2a47 Share'; btn.style.color=''; }, 2000); }
+      if (btn) { btn.textContent = 'Copied!'; btn.style.color = '#c9a84c'; setTimeout(function(){ btn.textContent = 'Share'; btn.style.color = ''; }, 2000); }
     },
     function() {
-      if (btn) { btn.textContent = '\u2717 Failed'; btn.style.color = '#f87171'; setTimeout(function(){ btn.textContent = '\u2a47 Share'; btn.style.color=''; }, 2000); }
+      if (btn) { btn.textContent = 'Failed'; btn.style.color = '#f87171'; setTimeout(function(){ btn.textContent = 'Share'; btn.style.color = ''; }, 2000); }
     }
   );
 }
@@ -756,8 +740,7 @@ function render() {
       if(e.birthYear){var age=mg.y-parseInt(e.birthYear);rightHtml='<div class="ev-right"><div class="ev-turns">turns</div><div class="ev-age">'+age+'</div></div>';}
       else if(isToday){rightHtml='<div class="ev-right"><div style="font-size:26px">🎉</div></div>';}
       else{var col=diff>=0?'var(--text)':'var(--dim)';rightHtml='<div class="ev-right"><div class="ev-dnum" style="color:'+col+'">'+Math.abs(diff)+'</div><div class="ev-dlbl">'+(diff>=0?'days left':'days ago')+'</div></div>';}
-      html+='<div class="event-item'+(isToday?' today-item':'')+'">' +
-        '<button class="ev-del" onclick="delEvent(\''+e.id+'\',event)">×</button>' +
+      html+='<div class="event-item'+(isToday?' today-item':'')+'" onclick="openActionSheet(\''+e.id+'\')">' +
         '<div class="ev-avatar" style="background:var(--bg3)">'+icon+'</div>' +
         '<div class="ev-info"><div class="ev-name">'+stripEmoji(e.name)+'</div>'+(e.bRel?'<div class="ev-rel">'+(e.bRel==='family'?'👨‍👩‍👧 Family':'👫 Friend')+'</div>':'')+'<div class="ev-date">'+dateStr+'</div>'+(e.notes?'<div class="ev-sub">'+e.notes+'</div>':'')+'<div class="'+cdClass+'">'+cdText+'</div></div>' +
         rightHtml+'</div>';
@@ -827,6 +810,7 @@ function saveEvent(){
     isAdmin: isAdmin(),
     isPublic: isAdmin() ? (selVisibility==='public') : false
   };
+  if (_editingId) { events = events.filter(function(x){ return x.id !== _editingId; }); _editingId = null; }
   events.push(ev);
   try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
   if (_token && _user) syncNow();
@@ -1034,6 +1018,7 @@ function saveEvent() {
     bRel:selCat==='birthday'?selBRel:null,
     isAdmin: isAdmin()
   };
+  if (_editingId) { events = events.filter(function(x){ return x.id !== _editingId; }); _editingId = null; }
   events.push(ev);
   try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
   if (_token && _user) syncNow();
@@ -1056,6 +1041,63 @@ function restoreSession() {
   return false;
 }
 
+
+var _actionId = null;
+var _editingId = null;
+
+function openActionSheet(id) {
+  var e = null;
+  for (var i=0; i<events.length; i++) { if (events[i].id===id) { e=events[i]; break; } }
+  if (!e) return;
+  _actionId = id;
+  var cat = getCat(e.category);
+  document.getElementById('asTitle').textContent = stripEmoji(e.name);
+  var parts = e.date.split('-');
+  var meta = cat.label + '  |  ' + MONTHS_S[parseInt(parts[1])-1] + ' ' + parts[2] + ', ' + parts[0];
+  if (e.time) meta += '  |  ' + fmtTime(e.time);
+  if (e.notes) meta += '\n' + e.notes;
+  document.getElementById('asMeta').textContent = meta;
+  document.getElementById('actionSheet').style.display = 'block';
+}
+
+function closeActionSheet() {
+  document.getElementById('actionSheet').style.display = 'none';
+  _actionId = null;
+}
+
+function deleteEventFromSheet() {
+  if (!_actionId) return;
+  if (!confirm('Delete this event?')) return;
+  events = events.filter(function(ev){ return ev.id !== _actionId; });
+  try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(ex){}
+  if (_token && _user) syncNow();
+  closeActionSheet();
+  render();
+}
+
+function startEditEvent() {
+  if (!_actionId) return;
+  var e = null;
+  for (var i=0; i<events.length; i++) { if (events[i].id===_actionId) { e=events[i]; break; } }
+  if (!e) return;
+  _editingId = _actionId;
+  closeActionSheet();
+  selCat = e.category; selRecur = e.recur || 'once';
+  selVisibility = e.isPublic ? 'public' : 'private';
+  selBRel = e.bRel || 'friend';
+  document.getElementById('mName').value = e.name;
+  document.getElementById('mDate').value = e.date;
+  document.getElementById('mTime').value = e.time || '';
+  document.getElementById('mNotes').value = e.notes || '';
+  document.getElementById('mBYear').value = e.birthYear || '';
+  buildCatGrid(); setRecur(selRecur); setVisibility(selVisibility); setBRel(selBRel);
+  document.getElementById('byr-row').className = (selCat==='birthday') ? 'show' : '';
+  document.getElementById('lunarHint').className = 'lunar-hint' + (selCat==='lunar-solar' ? ' show' : '');
+  var vRow = document.getElementById('visibilityRow');
+  if (vRow) vRow.style.display = isAdmin() ? 'block' : 'none';
+  document.getElementById('overlay').classList.add('show');
+}
+
 // ── INIT ─────────────────────────────────────────────
 loadTheme();
 loadEvents();
@@ -1069,5 +1111,18 @@ if (!restoreSession()) {
 }
 </script>
 <div id="toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2a4a;border:2px solid #c9a84c;color:#c9a84c;padding:12px 28px;border-radius:40px;font-size:15px;font-weight:700;z-index:999999;pointer-events:none;opacity:0;transition:opacity 0.3s;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,0.5)"></div>
+
+<!-- EVENT ACTION SHEET -->
+<div id="actionSheet" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.7);" onclick="closeActionSheet()">
+  <div style="position:absolute;bottom:0;left:0;right:0;background:var(--bg2);border-radius:16px 16px 0 0;padding:1.25rem;max-width:600px;margin:0 auto;" onclick="event.stopPropagation()">
+    <div id="asTitle" style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;"></div>
+    <div id="asMeta" style="font-size:12px;color:var(--muted);margin-bottom:1.25rem;line-height:1.5;"></div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button onclick="startEditEvent()" style="padding:12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:14px;cursor:pointer;text-align:left;">✏️ Edit</button>
+      <button onclick="deleteEventFromSheet()" style="padding:12px;border-radius:8px;border:1px solid var(--red);background:transparent;color:var(--red);font-family:inherit;font-size:14px;cursor:pointer;text-align:left;">🗑️ Delete</button>
+      <button onclick="closeActionSheet()" style="padding:12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;font-size:14px;cursor:pointer;text-align:left;">Cancel</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
