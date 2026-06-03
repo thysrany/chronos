@@ -928,7 +928,7 @@ function fsUrl(docPath) {
 }
 
 function fsWrite(docPath, data) {
-  if (!_token) return;
+  if (!_token) { showToast('Not signed in - cannot sync'); return; }
   var fields = {};
   fields['eventsJson'] = { stringValue: JSON.stringify(data) };
   fetch('https://firestore.googleapis.com/v1/projects/' + FB_PROJECT +
@@ -936,6 +936,13 @@ function fsWrite(docPath, data) {
     method: 'PATCH',
     headers: { 'Authorization': 'Bearer ' + _token, 'Content-Type': 'application/json' },
     body: JSON.stringify({ fields: fields })
+  }).then(function(r) {
+    if (!r.ok) {
+      r.text().then(function(t){ console.error('fsWrite error:', docPath, r.status, t); showToast('Sync error ' + r.status); });
+    }
+  }).catch(function(e) {
+    console.error('fsWrite failed:', e);
+    showToast('Sync failed: ' + e.message);
   });
 }
 
@@ -984,21 +991,19 @@ function loadFromFirestore() {
 }
 
 function syncNow() {
-  if (!_token || !_user) return;
+  if (!_token || !_user) { console.log('syncNow: no token or user'); return; }
   var uid = btoa(_user.email).replace(/=/g,'');
+  // Save personal events to user doc
+  var personalEvts = events.filter(function(e){ return !e.isAdmin; });
+  console.log('Syncing', personalEvts.length, 'personal events to chronos/users_' + uid);
+  fsWrite('chronos/users_' + uid, personalEvts);
+  // If admin, save public events to shared doc
   if (isAdmin()) {
-    // Public admin events → everyone sees them
-    var publicEvts = events.filter(function(e) { return e.isAdmin && e.isPublic; });
+    var publicEvts = events.filter(function(e){ return e.isPublic === true; });
+    console.log('Syncing', publicEvts.length, 'public events to chronos/adminEvents');
     fsWrite('chronos/adminEvents', publicEvts);
-    // Private admin events → only saved to admin's personal doc
-    var adminPrivate = events.filter(function(e) { return e.isAdmin && !e.isPublic; });
-    var adminPersonal = events.filter(function(e) { return !e.isAdmin; });
-    fsWrite('chronos/users_' + uid, adminPrivate.concat(adminPersonal));
-  } else {
-    var personalEvts = events.filter(function(e) { return !e.isAdmin; });
-    fsWrite('chronos/users_' + uid, personalEvts);
   }
-  showToast('✓ Synced!');
+  showToast('\u2713 Synced!');
 }
 
 // Override saveEventsLocal to also sync if signed in
