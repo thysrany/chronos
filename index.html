@@ -623,31 +623,36 @@ function getFiltered() {
 }
 
 
-// execCommand FIRST (confirmed working on this device), clipboard API as backup
 function copyText(text, onSuccess, onFail) {
-  var done = false;
-  // Method 1: textarea + execCommand (works in direct tap gesture on Android)
+  // Try modern clipboard API first (works on HTTPS)
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      if (onSuccess) onSuccess();
+    }).catch(function() {
+      // Fallback: execCommand
+      var ok = execCopy(text);
+      if (ok) { if (onSuccess) onSuccess(); } else { if (onFail) onFail(); }
+    });
+    return;
+  }
+  // No clipboard API — try execCommand directly
+  var ok = execCopy(text);
+  if (ok) { if (onSuccess) onSuccess(); } else { if (onFail) onFail(); }
+}
+
+function execCopy(text) {
   try {
     var ta = document.createElement('textarea');
     ta.value = text;
-    ta.contentEditable = true;
-    ta.readOnly = false;
-    ta.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:60px;opacity:0.01;z-index:-1;';
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:2px;height:2px;opacity:0;';
     document.body.appendChild(ta);
     ta.focus();
     ta.select();
     ta.setSelectionRange(0, text.length);
-    done = document.execCommand('copy');
+    var ok = document.execCommand('copy');
     document.body.removeChild(ta);
-  } catch(e) { done = false; }
-
-  // Method 2: clipboard API as backup (fire and forget)
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(function(){}).catch(function(){});
-  }
-
-  if (done) { if (onSuccess) onSuccess(); }
-  else { if (onSuccess) onSuccess(); } // assume success — clipboard API may have caught it
+    return ok;
+  } catch(e) { return false; }
 }
 
 function copyMonth(year, month, btn) {
@@ -1192,11 +1197,12 @@ window.addEventListener('load', function() {
 document.getElementById('monthCopyBtn').onclick = function() {
   var txt = buildMonthText(_monthSheetYear, _monthSheetMonth);
   if (!txt) { closeMonthSheet(); return; }
+  // Exact same code as copyQuote which works
   var btn = document.getElementById('monthCopyBtn');
   var orig = btn.textContent;
   copyText(txt,
-    function() { btn.textContent='\u2713 Copied!'; btn.style.color='#c9a84c'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; closeMonthSheet(); },1500); },
-    function() { btn.textContent='\u2717 Failed';  btn.style.color='#f87171'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; },2000); }
+    function() { btn.textContent = '\u2713 Copied!'; btn.style.color = '#c9a84c'; setTimeout(function(){ btn.textContent = orig; btn.style.color = ''; closeMonthSheet(); }, 2000); },
+    function() { btn.textContent = '\u2717 Try again'; btn.style.color = '#f87171'; setTimeout(function(){ btn.textContent = orig; btn.style.color = ''; }, 2000); }
   );
 };
 document.getElementById('monthShareBtn').onclick = function() {
@@ -1204,9 +1210,10 @@ document.getElementById('monthShareBtn').onclick = function() {
   if (!txt) { closeMonthSheet(); return; }
   if (navigator.share) {
     navigator.share({ title: MONTHS[_monthSheetMonth]+' '+_monthSheetYear, text: txt })
-      .then(function(){ closeMonthSheet(); }).catch(function(){});
+      .then(function(){ closeMonthSheet(); })
+      .catch(function(){ document.getElementById('monthCopyBtn').onclick(); });
   } else {
-    document.getElementById('monthCopyBtn').click();
+    document.getElementById('monthCopyBtn').onclick();
   }
 };
 }); // end window.onload
