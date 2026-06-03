@@ -51,10 +51,11 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 
 /* ── HEADER ── */
 .header { background:var(--header); padding:0; flex-shrink:0; }
-.header-top { position:relative; display:flex; align-items:center; justify-content:center; height:52px; }
-.logo { font-size:16px; font-weight:700; color:#fff; text-align:center; pointer-events:none; }
-.header-left { position:absolute; left:0.75rem; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; align-items:flex-start; gap:2px; }
-.header-right { position:absolute; right:0; width:0; overflow:hidden; }
+.header-top { position:relative; display:flex; align-items:center; justify-content:space-between; height:48px; padding:0 0.75rem; }
+.header-logo-row { display:flex; align-items:center; justify-content:center; padding:6px 0; border-top:1px solid rgba(255,255,255,0.08); }
+.logo { font-size:15px; font-weight:700; color:#fff; text-align:center; }
+.header-left { display:flex; align-items:center; gap:6px; }
+.header-right { display:flex; align-items:center; gap:4px; }
 .hbtn { width:36px; height:36px; border-radius:8px; border:none; background:transparent; color:#fff; font-size:17px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
 .filter-bar { display:flex; border-top:1px solid rgba(255,255,255,.1); overflow-x:auto; scrollbar-width:none; }
 .filter-bar::-webkit-scrollbar { display:none; }
@@ -179,8 +180,15 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
       <div class="header-left">
         <div id="userChip" style="display:none"></div>
       </div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <button class="hbtn" onclick="openTheme()" title="Themes">🎨</button>
+      </div>
+      <div class="header-right">
+        <button class="hbtn" id="addBtn" onclick="openModal()" title="Add event" style="display:none">＋</button>
+      </div>
+    </div>
+    <div class="header-logo-row">
       <div class="logo">🌙 ChronosCalendar</div>
-      <div class="header-right"></div>
     </div>
     <div class="filter-bar" id="timeBar">
       <button class="ftab on" data-t="upcoming" onclick="setTime('upcoming')">Upcoming</button>
@@ -194,8 +202,6 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 
   <div class="bottom-nav">
     <button class="bnav-btn on"><span class="bnav-icon">📅</span>Events</button>
-    <button class="bnav-btn" id="addBtn" onclick="openModal()" style="display:none"><span class="bnav-icon">＋</span>Add</button>
-    <button class="bnav-btn" onclick="openTheme()"><span class="bnav-icon">🎨</span>Theme</button>
     <button class="bnav-btn" id="syncNavBtn" onclick="syncNow()" style="display:none"><span class="bnav-icon">↻</span>Sync</button>
   </div>
 </div>
