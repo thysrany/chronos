@@ -272,6 +272,13 @@ body { background: var(--bg); color: var(--text); }
         </div>
       </div>
       <div><label class="flabel">Notes (optional)</label><input class="finput" id="mNotes" placeholder="Any details..." /></div>
+      <div id="visibilityRow" style="display:none">
+        <label class="flabel">Visibility</label>
+        <div class="togrow">
+          <button class="togbtn" id="visPublic" onclick="setVisibility('public')">🌍 Public — everyone sees this</button>
+          <button class="togbtn on" id="visPrivate" onclick="setVisibility('private')">🔒 Private — only you</button>
+        </div>
+      </div>
     </div>
     <div class="mfoot">
       <button class="btn-cancel-m" onclick="closeModal()">Cancel</button>
@@ -319,6 +326,7 @@ var catFilter  = 'all';
 var selCat     = 'lunar';
 var selRecur   = 'once';
 var selBRel    = 'friend';
+var selVisibility = 'private';
 var curQuote   = null;
 var curTheme   = 'theme-light';
 
@@ -642,6 +650,13 @@ function pickCat(id){
   document.getElementById('byr-row').className=(id==='birthday')?'show':'';
   document.getElementById('lunarHint').className='lunar-hint'+(id==='lunar-solar'?' show':'');
 }
+function setVisibility(v) {
+  selVisibility = v;
+  ['visPublic','visPrivate'].forEach(function(id,i) {
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle('on', ['public','private'][i] === v);
+  });
+}
 function setBRel(r){
   selBRel=r;
   ['bRelFriend','bRelFamily'].forEach(function(id,i){
@@ -659,7 +674,11 @@ function openModal(){
   buildCatGrid();setRecur('once');
   document.getElementById('byr-row').className='';
   selBRel='friend'; setBRel('friend');
+  selVisibility='private'; setVisibility('private');
   document.getElementById('lunarHint').className='lunar-hint show';
+  // Show visibility toggle only for admin
+  var vRow = document.getElementById('visibilityRow');
+  if (vRow) vRow.style.display = isAdmin() ? 'block' : 'none';
   document.getElementById('overlay').classList.add('show');
 }
 function closeModal(){document.getElementById('overlay').classList.remove('show');}
@@ -829,13 +848,18 @@ function loadFromFirestore() {
 function syncNow() {
   if (!_token || !_user) return;
   var uid = btoa(_user.email).replace(/=/g,'');
-  var personalEvts = events.filter(function(e) { return !e.isAdmin; });
-  // Admin saves to adminEvents doc (everyone sees it)
   if (isAdmin()) {
-    fsWrite('chronos/adminEvents', personalEvts);
+    // Public admin events → everyone sees them
+    var publicEvts = events.filter(function(e) { return e.isAdmin && e.isPublic; });
+    fsWrite('chronos/adminEvents', publicEvts);
+    // Private admin events → only saved to admin's personal doc
+    var adminPrivate = events.filter(function(e) { return e.isAdmin && !e.isPublic; });
+    var adminPersonal = events.filter(function(e) { return !e.isAdmin; });
+    fsWrite('chronos/users_' + uid, adminPrivate.concat(adminPersonal));
+  } else {
+    var personalEvts = events.filter(function(e) { return !e.isAdmin; });
+    fsWrite('chronos/users_' + uid, personalEvts);
   }
-  // Everyone saves personal events to their own doc
-  fsWrite('chronos/users_' + uid, personalEvts);
   showToast('✓ Synced!');
 }
 
