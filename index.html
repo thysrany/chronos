@@ -140,9 +140,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 .btn-save-m { padding:9px 24px; border-radius:8px; background:var(--gold); border:none; color:#0d1117; font-family:'Open Sans',sans-serif; font-size:14px; font-weight:700; cursor:pointer; }
 .btn-cancel-m { padding:9px 18px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); font-family:'Open Sans',sans-serif; font-size:14px; cursor:pointer; }
 
-/* ── TOAST ── */
-.toast { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--header); border:2px solid var(--gold); color:var(--gold); padding:12px 28px; border-radius:40px; font-size:14px; font-weight:600; z-index:99999; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; box-shadow:0 4px 20px rgba(0,0,0,0.4); }
-.toast.show { opacity:1; }
+/* toast uses inline styles */
 /* ── MONTH COPY ── */
 .month-header { display:flex; align-items:center; justify-content:space-between; }
 .month-copy-btn { background:transparent; border:1px solid rgba(201,168,76,0.3); border-radius:6px; color:var(--gold); font-size:10px; padding:2px 8px; cursor:pointer; font-family:'Open Sans',sans-serif; opacity:0.7; }
@@ -150,8 +148,6 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 </style>
 </head>
 <body class="theme-light">
-
-<div class="toast" id="toast"></div>
 
 <!-- SPLASH -->
 <div id="splash">
@@ -165,6 +161,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
     <button class="btn-ghost" onclick="copyQuote()">⧉ Copy & Share</button>
     <button class="btn-gold" onclick="enterApp()">Enter →</button>
   </div>
+  <div id="toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2a4a;border:2px solid #c9a84c;color:#c9a84c;padding:12px 28px;border-radius:40px;font-size:15px;font-weight:700;z-index:999999;pointer-events:none;opacity:0;transition:opacity 0.3s;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,0.5)"></div>
 </div>
 
 <!-- SIGN-IN SCREEN -->
@@ -496,36 +493,32 @@ function initSplash() {
 }
 
 function copyQuote() {
+  if (!curQuote) { showToast('Please wait...'); return; }
   var txt = '\u201c' + curQuote.t + '\u201d \u2014 ' + curQuote.a + (curQuote.r ? '\n\n' + curQuote.r : '');
-  // Always try fallback first (works in user gesture context on mobile)
-  // Then also try clipboard API for good measure
-  fallbackCopy(txt);
   if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(txt).catch(function(){});
+    navigator.clipboard.writeText(txt).then(function() {
+      showToast('\u2713 Copied!');
+    }).catch(function() {
+      fallbackCopy(txt);
+    });
+  } else {
+    fallbackCopy(txt);
   }
 }
 
 function fallbackCopy(txt) {
+  showToast('\u2713 Copied!');
   try {
     var ta = document.createElement('textarea');
     ta.value = txt;
     ta.setAttribute('readonly', '');
-    ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:2px;height:2px;opacity:0;';
     document.body.appendChild(ta);
     ta.focus();
-    ta.select();
-    var range = document.createRange();
-    range.selectNodeContents(ta);
-    var sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
     ta.setSelectionRange(0, 999999);
-    var ok = document.execCommand('copy');
+    document.execCommand('copy');
     document.body.removeChild(ta);
-    showToast(ok ? '\u2713 Copied!' : '\u2713 Ready to paste!');
-  } catch(e) {
-    showToast('\u2713 Ready to paste!');
-  }
+  } catch(e) {}
 }
 
 function enterApp() {
@@ -541,9 +534,10 @@ function enterApp() {
 
 function showToast(msg) {
   var t = document.getElementById('toast');
+  if (!t) return;
   t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(function(){ t.classList.remove('show'); }, 2500);
+  t.style.opacity = '1';
+  setTimeout(function(){ t.style.opacity = '0'; }, 2500);
 }
 
 // ── CAT STRIP ─────────────────────────────────────────
