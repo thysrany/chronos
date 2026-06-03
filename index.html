@@ -158,7 +158,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
   <div class="sp-author" id="sqAuthor"></div>
   <div class="sp-reflection" id="sqReflection"></div>
   <div class="sp-btns">
-    <button class="btn-ghost" onclick="copyQuote()">⧉ Copy & Share</button>
+    <button class="btn-ghost" id="cpBtn" onclick="doCopy(this)">⧉ Copy & Share</button>
     <button class="btn-gold" onclick="enterApp()">Enter →</button>
   </div>
   <div id="toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2a4a;border:2px solid #c9a84c;color:#c9a84c;padding:12px 28px;border-radius:40px;font-size:15px;font-weight:700;z-index:999999;pointer-events:none;opacity:0;transition:opacity 0.3s;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,0.5)"></div>
@@ -492,34 +492,37 @@ function initSplash() {
   if (refEl) refEl.textContent = curQuote.r || '';
 }
 
-function copyQuote() {
-  if (!curQuote) { showToast('Please wait...'); return; }
-  var txt = '\u201c' + curQuote.t + '\u201d \u2014 ' + curQuote.a + (curQuote.r ? '\n\n' + curQuote.r : '');
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(txt).then(function() {
-      showToast('\u2713 Copied!');
-    }).catch(function() {
-      fallbackCopy(txt);
-    });
-  } else {
-    fallbackCopy(txt);
-  }
-}
+function copyQuote() { doCopy(null); }
 
-function fallbackCopy(txt) {
-  showToast('\u2713 Copied!');
+function doCopy(btn) {
+  if (!curQuote) return;
+  var txt = '\u201c' + curQuote.t + '\u201d \u2014 ' + curQuote.a + (curQuote.r ? '\n\n' + curQuote.r : '');
+
+  // Show feedback immediately — before anything async
+  var b = btn || document.getElementById('cpBtn');
+  var orig = b ? b.textContent : '';
+  if (b) { b.textContent = '\u2713 Copied!'; b.style.color = '#c9a84c'; b.style.borderColor = '#c9a84c'; }
+  setTimeout(function() {
+    if (b) { b.textContent = orig; b.style.color = ''; b.style.borderColor = ''; }
+  }, 2000);
+
+  // Try all copy methods
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(txt).catch(function() {});
+  }
   try {
     var ta = document.createElement('textarea');
     ta.value = txt;
-    ta.setAttribute('readonly', '');
     ta.style.cssText = 'position:fixed;top:0;left:0;width:2px;height:2px;opacity:0;';
     document.body.appendChild(ta);
     ta.focus();
-    ta.setSelectionRange(0, 999999);
+    ta.setSelectionRange(0, 99999);
     document.execCommand('copy');
     document.body.removeChild(ta);
   } catch(e) {}
 }
+
+// fallbackCopy replaced by doCopy
 
 function enterApp() {
   var s = document.getElementById('splash');
