@@ -892,13 +892,16 @@ function doSignIn() {
       client_id: CLIENT_ID,
       scope: 'profile email https://www.googleapis.com/auth/datastore',
       callback: function(resp) {
-        if (resp.error) { alert('Sign-in failed: ' + resp.error); return; }
+        if (resp.error) { return; }
         _token = resp.access_token;
         var exp = Date.now() + (resp.expires_in - 300) * 1000;
         localStorage.setItem('ch_token', _token);
         localStorage.setItem('ch_token_exp', exp);
         scheduleTokenRefresh(resp.expires_in - 300);
-        fetchUserInfo();
+        // Only fetch user info if not already signed in
+        if (!_user) {
+          fetchUserInfo();
+        }
       }
     });
   }
@@ -918,8 +921,12 @@ function doSignOut() {
 
 function scheduleTokenRefresh(secondsUntilRefresh) {
   if (_refreshTimer) clearTimeout(_refreshTimer);
+  if (secondsUntilRefresh <= 0) return;
   _refreshTimer = setTimeout(function() {
-    if (_tokenClient) _tokenClient.requestAccessToken({ prompt: '' });
+    // Silent refresh — only update token, don't re-trigger sign-in flow
+    if (_tokenClient && _user) {
+      _tokenClient.requestAccessToken({ prompt: '' });
+    }
   }, secondsUntilRefresh * 1000);
 }
 
@@ -1092,6 +1099,10 @@ function restoreSession() {
     onSignedIn();
     return true;
   }
+  // Clear stale data
+  localStorage.removeItem('ch_token');
+  localStorage.removeItem('ch_token_exp');
+  localStorage.removeItem('ch_user');
   return false;
 }
 
