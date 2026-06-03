@@ -630,10 +630,28 @@ function getFiltered() {
   return results;
 }
 
+
+// Universal copy — exact method from SpeakDeck (confirmed working on device)
+function copyText(text, onSuccess, onFail) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(onSuccess).catch(function() { fallback(); });
+  } else { fallback(); }
+  function fallback() {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      ta.setSelectionRange(0, 99999);
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      if (ok) onSuccess(); else onFail();
+    } catch(e) { onFail(); }
+  }
+}
+
 function copyMonth(year, month, btn) {
-  // Immediate feedback so user knows tap registered
-  if (btn) { btn.textContent = '...'; btn.style.color = '#fff'; }
-  // Respect current category filter — only copy what user is viewing
   var savedTime = timeFilter;
   timeFilter = 'all';
   var allItems = getFiltered().filter(function(item) {
@@ -641,9 +659,12 @@ function copyMonth(year, month, btn) {
   });
   timeFilter = savedTime;
 
-  if (!allItems.length) { showToast('No events in ' + MONTHS[month]); return; }
+  if (!allItems.length) {
+    if (btn) { btn.textContent = 'No events'; setTimeout(function(){ btn.textContent = '\u2a47 Share'; btn.style.color=''; }, 2000); }
+    return;
+  }
 
-  var lines = ['📅 ' + MONTHS[month] + ' ' + year, ''];
+  var lines = ['\ud83d\udcc5 ' + MONTHS[month] + ' ' + year, ''];
   var lastDay = -1;
   for (var i = 0; i < allItems.length; i++) {
     var item = allItems[i];
@@ -656,15 +677,32 @@ function copyMonth(year, month, btn) {
     }
     var cat = getCat(e.category);
     var name = stripEmoji(e.name);
-    var time = e.time ? ' · ' + fmtTime(e.time) : '';
+    var time = e.time ? ' \u00b7 ' + fmtTime(e.time) : '';
     var note = e.notes ? ' (' + e.notes + ')' : '';
-    var age  = e.birthYear ? ' — turns ' + (year - parseInt(e.birthYear)) : '';
+    var age  = e.birthYear ? ' \u2014 turns ' + (year - parseInt(e.birthYear)) : '';
     lines.push('  ' + cat.label.split(' ')[0] + ' ' + name + time + age + note);
   }
-
   var txt = lines.join('\n');
-  // Use confirmed working method - button gives feedback
-  fallbackCopy2(txt, month, btn);
+
+  // Use Web Share API on mobile (native share sheet)
+  if (navigator.share) {
+    navigator.share({ title: MONTHS[month] + ' ' + year, text: txt })
+      .then(function() {
+        if (btn) { btn.textContent = '\u2713 Shared!'; btn.style.color = '#c9a84c'; setTimeout(function(){ btn.textContent = '\u2191 Share'; btn.style.color=''; }, 2000); }
+      })
+      .catch(function() {});
+    return;
+  }
+
+  // Fallback: SpeakDeck copyText
+  copyText(txt,
+    function() {
+      if (btn) { btn.textContent = '\u2713 Copied!'; btn.style.color = '#c9a84c'; setTimeout(function(){ btn.textContent = '\u2a47 Share'; btn.style.color=''; }, 2000); }
+    },
+    function() {
+      if (btn) { btn.textContent = '\u2717 Failed'; btn.style.color = '#f87171'; setTimeout(function(){ btn.textContent = '\u2a47 Share'; btn.style.color=''; }, 2000); }
+    }
+  );
 }
 
 function fallbackCopy2(txt, month, btn) {
@@ -705,7 +743,7 @@ function render() {
   var html='';
   for(var mi=0;mi<monthOrder.length;mi++){
     var mg=months[monthOrder[mi]];
-    html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class="month-copy-btn" onclick="copyMonth('+mg.y+','+mg.m+',this)">⧉ Copy</button></div>';
+    html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class="month-copy-btn" onclick="copyMonth('+mg.y+','+mg.m+',this)">\u21d1 Share</button></div>';
     for(var ii=0;ii<mg.items.length;ii++){
       var item=mg.items[ii],e=item.ev,d=item.date,cat=getCat(e.category);
       var isToday=d.getTime()===now.getTime();
