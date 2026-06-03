@@ -786,9 +786,9 @@ function setVisibility(v) {
 }
 function setBRel(r){
   selBRel=r;
-  ['bRelFriend','bRelFamily'].forEach(function(id,i){
+  ['bRelFriend','bRelFamily','bRelEvent'].forEach(function(id,i){
     var el=document.getElementById(id);
-    if(el) el.classList.toggle('on',['friend','family'][i]===r);
+    if(el) el.classList.toggle('on',['friend','family','event'][i]===r);
   });
 }
 function setRecur(r){
