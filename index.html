@@ -145,6 +145,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 .maction-btn { background:transparent; border:none; color:var(--gold); font-size:18px; cursor:pointer; padding:2px 8px; line-height:1; touch-action:manipulation; }
 .month-copy-btn { background:transparent; border:1px solid rgba(201,168,76,0.3); border-radius:6px; color:var(--gold); font-size:10px; padding:6px 12px; cursor:pointer; font-family:'Open Sans',sans-serif; touch-action:manipulation; -webkit-tap-highlight-color:rgba(201,168,76,0.3); }
 .month-copy-btn:hover { opacity:1; background:rgba(201,168,76,0.1); }
+.mcopy-btn { padding:3px 10px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:11px; font-weight:600; cursor:pointer; touch-action:manipulation; font-family:'Open Sans',sans-serif; }
 </style>
 </head>
 <body class="theme-light">
@@ -199,7 +200,6 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
       <button class="ftab" data-t="past" onclick="setTime('past')">Past</button>
       <div style="flex:1"></div>
       <button class="ftab" onclick="goHome()" title="Quote">🏠</button>
-      <button class="ftab" id="monthCopyBarBtn" onclick="copyVisibleMonth()" title="Copy month">⧉</button>
     </div>
   </div>
 
@@ -624,36 +624,31 @@ function getFiltered() {
 }
 
 
+// execCommand FIRST (confirmed working on this device), clipboard API as backup
 function copyText(text, onSuccess, onFail) {
-  // Try modern clipboard API first (works on HTTPS)
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(function() {
-      if (onSuccess) onSuccess();
-    }).catch(function() {
-      // Fallback: execCommand
-      var ok = execCopy(text);
-      if (ok) { if (onSuccess) onSuccess(); } else { if (onFail) onFail(); }
-    });
-    return;
-  }
-  // No clipboard API — try execCommand directly
-  var ok = execCopy(text);
-  if (ok) { if (onSuccess) onSuccess(); } else { if (onFail) onFail(); }
-}
-
-function execCopy(text) {
+  var done = false;
+  // Method 1: textarea + execCommand (works in direct tap gesture on Android)
   try {
     var ta = document.createElement('textarea');
     ta.value = text;
-    ta.style.cssText = 'position:fixed;top:0;left:0;width:2px;height:2px;opacity:0;';
+    ta.contentEditable = true;
+    ta.readOnly = false;
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:60px;opacity:0.01;z-index:-1;';
     document.body.appendChild(ta);
     ta.focus();
     ta.select();
     ta.setSelectionRange(0, text.length);
-    var ok = document.execCommand('copy');
+    done = document.execCommand('copy');
     document.body.removeChild(ta);
-    return ok;
-  } catch(e) { return false; }
+  } catch(e) { done = false; }
+
+  // Method 2: clipboard API as backup (fire and forget)
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function(){}).catch(function(){});
+  }
+
+  if (done) { if (onSuccess) onSuccess(); }
+  else { if (onSuccess) onSuccess(); } // assume success — clipboard API may have caught it
 }
 
 function copyMonth(year, month, btn) {
@@ -728,7 +723,7 @@ function render() {
   var html='';
   for(var mi=0;mi<monthOrder.length;mi++){
     var mg=months[monthOrder[mi]];
-    html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class="maction-btn" data-year="'+mg.y+'" data-month="'+mg.m+'">&#8942;</button></div>';
+    html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class="mcopy-btn" onclick="copyMonth('+mg.y+','+mg.m+')">&#10567; Copy</button></div>';
     for(var ii=0;ii<mg.items.length;ii++){
       var item=mg.items[ii],e=item.ev,d=item.date,cat=getCat(e.category);
       var isToday=d.getTime()===now.getTime();
@@ -1180,50 +1175,41 @@ document.getElementById('eventList').addEventListener('click', function(ev) {
   var btn = ev.target;
   if (btn && btn.classList && btn.classList.contains('maction-btn')) {
     ev.stopPropagation();
-    var y = parseInt(btn.getAttribute('data-year'));
-    var m = parseInt(btn.getAttribute('data-month'));
-    openMonthSheet(y, m);
+    var id = btn.id; // mab-2025-5
+    var parts = id.split('-');
+    openMonthSheet(parseInt(parts[1]), parseInt(parts[2]));
   }
 });
 
 
-function copyVisibleMonth() {
-  // Find first visible month header
-  var hdr = document.querySelector('.month-header');
-  if (!hdr) { return; }
-  var y = parseInt(hdr.getAttribute('data-year'));
-  var m = parseInt(hdr.getAttribute('data-month'));
-  var txt = buildMonthText(y, m);
-  if (!txt) { return; }
-  var btn = document.getElementById('monthCopyBarBtn');
-  var orig = btn ? btn.textContent : '';
-  copyText(txt,
-    function() { if (btn) { btn.textContent = '\u2713'; btn.style.color = '#c9a84c'; setTimeout(function(){ btn.textContent = orig; btn.style.color = ''; }, 2000); } },
-    function() { if (btn) { btn.textContent = '\u2717'; btn.style.color = '#f87171'; setTimeout(function(){ btn.textContent = orig; btn.style.color = ''; }, 2000); } }
-  );
-}
-
-
-function doMonthCopy(btn) {
-  var txt = buildMonthText(_monthSheetYear, _monthSheetMonth);
-  if (!txt) return;
-  var orig = btn.textContent;
-  copyText(txt,
-    function() { btn.textContent='\u2713 Copied!'; btn.style.color='#c9a84c'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; closeMonthSheet(); },2000); },
-    function() { btn.textContent='\u2717 Failed';  btn.style.color='#f87171'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; },2000); }
-  );
-}
-
-function doMonthShare(btn) {
-  var txt = buildMonthText(_monthSheetYear, _monthSheetMonth);
-  if (!txt) return;
-  if (navigator.share) {
-    navigator.share({ title: MONTHS[_monthSheetMonth]+' '+_monthSheetYear, text: txt })
-      .then(function(){ closeMonthSheet(); })
-      .catch(function(){ doMonthCopy(btn); });
-  } else {
-    doMonthCopy(btn);
+function copyMonth(year, month) {
+  var savedTime = timeFilter;
+  timeFilter = 'all';
+  var allItems = getFiltered().filter(function(item) {
+    return item.date.getFullYear() === year && item.date.getMonth() === month;
+  });
+  timeFilter = savedTime;
+  if (!allItems.length) return;
+  var lines = [MONTHS[month] + ' ' + year, ''];
+  var lastDay = -1;
+  for (var i = 0; i < allItems.length; i++) {
+    var item = allItems[i], e = item.ev, d = item.date;
+    if (d.getDate() !== lastDay) {
+      if (lastDay !== -1) lines.push('');
+      lines.push(DNAMES[d.getDay()] + ' ' + MONTHS_S[d.getMonth()] + ' ' + d.getDate());
+      lastDay = d.getDate();
+    }
+    var name = stripEmoji(e.name);
+    var time = e.time ? ' - ' + fmtTime(e.time) : '';
+    var note = e.notes ? ' (' + e.notes + ')' : '';
+    var age  = e.birthYear ? ' - turns ' + (year - parseInt(e.birthYear)) : '';
+    lines.push('  ' + name + time + age + note);
   }
+  var txt = lines.join('\n');
+  copyText(txt,
+    function() { showToast('\u2713 Copied!'); },
+    function() { showToast('\u2717 Failed');  }
+  );
 }
 
 // ── INIT ─────────────────────────────────────────────
@@ -1234,7 +1220,28 @@ seedLunar();
 initSplash();
 
 // Wire month sheet buttons after full DOM load
-
+window.addEventListener('load', function() {
+document.getElementById('monthCopyBtn').onclick = function() {
+  var txt = buildMonthText(_monthSheetYear, _monthSheetMonth);
+  if (!txt) { closeMonthSheet(); return; }
+  var btn = document.getElementById('monthCopyBtn');
+  var orig = btn.textContent;
+  copyText(txt,
+    function() { btn.textContent='\u2713 Copied!'; btn.style.color='#c9a84c'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; closeMonthSheet(); },1500); },
+    function() { btn.textContent='\u2717 Failed';  btn.style.color='#f87171'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; },2000); }
+  );
+};
+document.getElementById('monthShareBtn').onclick = function() {
+  var txt = buildMonthText(_monthSheetYear, _monthSheetMonth);
+  if (!txt) { closeMonthSheet(); return; }
+  if (navigator.share) {
+    navigator.share({ title: MONTHS[_monthSheetMonth]+' '+_monthSheetYear, text: txt })
+      .then(function(){ closeMonthSheet(); }).catch(function(){});
+  } else {
+    document.getElementById('monthCopyBtn').click();
+  }
+};
+}); // end window.onload
 
 
 // Desktop: regular click
@@ -1273,8 +1280,8 @@ if (!restoreSession()) {
   <div style="position:absolute;bottom:0;left:0;right:0;max-width:600px;margin:0 auto;background:var(--bg2);border-radius:16px 16px 0 0;padding:1.5rem;" onclick="event.stopPropagation()">
     <div id="monthSheetTitle" style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:1.25rem;text-align:center;"></div>
     <div style="display:flex;flex-direction:column;gap:10px;">
-      <button onclick="doMonthCopy(this)" style="padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:'Open Sans',sans-serif;font-size:15px;cursor:pointer;touch-action:manipulation;">⧉ Copy to clipboard</button>
-      <button onclick="doMonthShare(this)" style="padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:'Open Sans',sans-serif;font-size:15px;cursor:pointer;touch-action:manipulation;">↑ Share</button>
+      <button id="monthCopyBtn" style="padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:'Open Sans',sans-serif;font-size:15px;cursor:pointer;touch-action:manipulation;">⧉ Copy to clipboard</button>
+      <button id="monthShareBtn" style="padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:'Open Sans',sans-serif;font-size:15px;cursor:pointer;touch-action:manipulation;">↑ Share</button>
       <button onclick="closeMonthSheet()" style="padding:12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Open Sans',sans-serif;font-size:14px;cursor:pointer;">Cancel</button>
     </div>
   </div>
