@@ -158,7 +158,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
   <div class="sp-author" id="sqAuthor"></div>
   <div class="sp-reflection" id="sqReflection"></div>
   <div class="sp-btns">
-    <button class="btn-ghost" id="cpBtn" onclick="doCopy(this)">⧉ Copy & Share</button>
+    <button class="btn-ghost" onclick="copyQuote()">⧉ Copy & Share</button>
     <button class="btn-gold" onclick="enterApp()">Enter →</button>
   </div>
   <div id="toast" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2a4a;border:2px solid #c9a84c;color:#c9a84c;padding:12px 28px;border-radius:40px;font-size:15px;font-weight:700;z-index:999999;pointer-events:none;opacity:0;transition:opacity 0.3s;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,0.5)"></div>
@@ -197,6 +197,8 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
       <button class="ftab on" data-t="upcoming" onclick="setTime('upcoming')">Upcoming</button>
       <button class="ftab" data-t="all" onclick="setTime('all')">All</button>
       <button class="ftab" data-t="past" onclick="setTime('past')">Past</button>
+      <div style="flex:1"></div>
+      <button class="ftab" onclick="goHome()" title="Quote">🏠</button>
     </div>
   </div>
 
@@ -492,57 +494,53 @@ function initSplash() {
   if (refEl) refEl.textContent = curQuote.r || '';
 }
 
-function copyQuote() { doCopy(null); }
-
-function doCopy(btn) {
-  if (!curQuote) return;
+function copyQuote() {
+  if (!curQuote) { showToast('Please wait...'); return; }
   var txt = '\u201c' + curQuote.t + '\u201d \u2014 ' + curQuote.a + (curQuote.r ? '\n\n' + curQuote.r : '');
-  var b = btn || document.getElementById('cpBtn');
-  var orig = b ? b.textContent : '';
-
-  // Use execCommand — confirmed working on this device
-  try {
-    var ta = document.createElement('textarea');
-    ta.value = txt;
-    ta.style.cssText = 'position:fixed;top:0;left:0;width:2px;height:2px;opacity:0;';
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.setSelectionRange(0, 99999);
-    var ok = document.execCommand('copy');
-    document.body.removeChild(ta);
-    if (b) {
-      b.textContent = ok ? '\u2713 Copied!' : '\u2717 Try again';
-      b.style.color = ok ? '#c9a84c' : '#f87171';
-      b.style.borderColor = ok ? '#c9a84c' : '#f87171';
-      setTimeout(function() {
-        b.textContent = orig;
-        b.style.color = '';
-        b.style.borderColor = '';
-      }, 2000);
-    }
-  } catch(e) {
-    if (b) { b.textContent = '\u2717 Error'; b.style.color = '#f87171'; }
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(txt).then(function() {
+      showToast('\u2713 Copied!');
+    }).catch(function() {
+      fallbackCopy(txt);
+    });
+  } else {
+    fallbackCopy(txt);
   }
 }
 
-// fallbackCopy replaced by doCopy
+function fallbackCopy(txt) {
+  showToast('\u2713 Copied!');
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = txt;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:2px;height:2px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.setSelectionRange(0, 999999);
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  } catch(e) {}
+}
+
+function goHome() {
+  // Reinitialize quote then show splash again
+  initSplash();
+  var s = document.getElementById('splash');
+  s.style.display = '';
+  s.style.opacity = '0';
+  s.classList.remove('hidden');
+  setTimeout(function() { s.style.opacity = '1'; }, 10);
+}
 
 function enterApp() {
   var s = document.getElementById('splash');
   s.classList.add('hidden');
   setTimeout(function() {
-    s.style.display = 'none';
-    // If already signed in, go straight to app
-    if (_user && _token) {
-      document.getElementById('signinScreen').classList.add('hidden');
-      document.getElementById('app').style.display = '';
-      document.getElementById('app').classList.add('show');
-      buildCatStrip();
-      render();
-    } else {
-      // Show sign-in screen
-      document.getElementById('signinScreen').classList.remove('hidden');
-    }
+    s.style.display='none';
+    document.getElementById('app').classList.add('show');
+    buildCatStrip();
+    render();
   }, 700);
 }
 
@@ -855,12 +853,8 @@ function fetchUserInfo() {
 }
 
 function onSignedIn() {
-  // Hide splash if still showing
-  var splash = document.getElementById('splash');
-  if (splash) { splash.classList.add('hidden'); splash.style.display = 'none'; }
   document.getElementById('signinScreen').classList.add('hidden');
   document.getElementById('app').style.display = '';
-  document.getElementById('app').classList.add('show');
   updateAuthUI(true);
   loadFromFirestore();
 }
