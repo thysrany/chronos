@@ -138,6 +138,20 @@ body { background: var(--bg); color: var(--text); }
 
 .toast { position:fixed; bottom:5rem; left:50%; transform:translateX(-50%); background:var(--bg3); border:1px solid var(--gold); color:var(--gold); padding:10px 24px; border-radius:40px; font-size:13px; z-index:9999; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
 .toast.show { opacity:1; }
+
+/* ── SIGN-IN SCREEN ── */
+.signin-screen { position:fixed; inset:0; background:var(--bg); z-index:9000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem; gap:1rem; }
+.signin-screen.hidden { display:none; }
+.signin-appname { font-size:22px; font-weight:700; color:var(--gold); text-align:center; }
+.signin-tagline { font-size:13px; color:var(--muted); text-align:center; max-width:260px; line-height:1.6; }
+.signin-google-btn { display:flex; align-items:center; gap:10px; padding:12px 24px; background:#fff; border:1px solid #ddd; border-radius:10px; font-size:14px; font-weight:600; color:#333; cursor:pointer; font-family:'Open Sans',sans-serif; margin-top:8px; }
+.signin-note { font-size:11px; color:var(--dim); text-align:center; max-width:240px; line-height:1.5; }
+.user-chip { display:flex; align-items:center; gap:6px; }
+.user-chip img { width:26px; height:26px; border-radius:50%; border:2px solid var(--gold); }
+.admin-badge { font-size:9px; background:var(--gold); color:#000; padding:1px 5px; border-radius:4px; font-weight:700; }
+.signout-btn { font-size:11px; color:rgba(255,255,255,0.5); background:transparent; border:none; cursor:pointer; padding:2px 6px; }
+.signout-btn:hover { color:var(--red); }
+
 </style>
 </head>
 <body class="theme-light">
@@ -159,22 +173,11 @@ body { background: var(--bg); color: var(--text); }
 
 <!-- SIGN-IN SCREEN -->
 <div class="signin-screen" id="signinScreen">
-  <svg class="signin-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
-    <defs>
-      <radialGradient id="sbg" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#1e1b4b"/><stop offset="100%" stop-color="#0f0c29"/></radialGradient>
-      <radialGradient id="smf" cx="40%" cy="35%" r="55%"><stop offset="0%" stop-color="#f1f5f9"/><stop offset="100%" stop-color="#cbd5e1"/></radialGradient>
-      <filter id="sg"><feGaussianBlur stdDeviation="8" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-    </defs>
-    <circle cx="200" cy="200" r="200" fill="url(#sbg)"/>
-    <circle cx="200" cy="200" r="185" fill="none" stroke="#f59e0b" stroke-width="3" opacity="0.5"/>
-    <g filter="url(#sg)"><circle cx="200" cy="185" r="100" fill="url(#smf)"/><circle cx="245" cy="168" r="88" fill="url(#sbg)"/></g>
-    <circle cx="148" cy="103" r="6" fill="#fde68a" opacity="0.95"/>
-    <circle cx="310" cy="130" r="7" fill="#fde68a" opacity="0.9"/>
-  </svg>
+  <div style="font-size:52px;line-height:1">🌙</div>
   <div class="signin-appname">ChronosCalendar.app</div>
-  <div class="signin-tagline">Your personal lunar, solar & life events calendar</div>
+  <div class="signin-tagline">Your personal lunar, solar &amp; life events calendar</div>
   <button class="signin-google-btn" onclick="doSignIn()">
-    <img src="https://www.google.com/favicon.ico" alt="G"> Sign in with Google
+    <img src="https://www.google.com/favicon.ico" alt="G" width="16" height="16"> Sign in with Google
   </button>
   <div class="signin-note">Sign in to sync your events across all your devices</div>
 </div>
