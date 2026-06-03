@@ -6,8 +6,6 @@
 <title>ChronosCalendar.app</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%230f0c29'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='35%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23cbd5e1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='200' cy='200' r='200' fill='url(%23a)'/%3E%3Ccircle cx='200' cy='200' r='185' fill='none' stroke='%23f59e0b' stroke-width='6' opacity='0.6'/%3E%3Ccircle cx='200' cy='185' r='100' fill='url(%23b)'/%3E%3Ccircle cx='245' cy='168' r='88' fill='url(%23a)'/%3E%3Ccircle cx='148' cy='103' r='8' fill='%23fde68a'/%3E%3Ccircle cx='310' cy='130' r='9' fill='%23fde68a' opacity='0.9'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%230f0c29'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='35%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23cbd5e1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='200' cy='200' r='200' fill='url(%23a)'/%3E%3Ccircle cx='200' cy='200' r='185' fill='none' stroke='%23f59e0b' stroke-width='6' opacity='0.6'/%3E%3Ccircle cx='200' cy='185' r='100' fill='url(%23b)'/%3E%3Ccircle cx='245' cy='168' r='88' fill='url(%23a)'/%3E%3Ccircle cx='148' cy='103' r='8' fill='%23fde68a'/%3E%3Ccircle cx='310' cy='130' r='9' fill='%23fde68a' opacity='0.9'/%3E%3C/svg%3E">
-<script src="https://accounts.google.com/gsi/client"></script>
-<script src="https://accounts.google.com/gsi/client"></script>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
@@ -170,7 +168,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
   <div style="font-size:52px;line-height:1">🌙</div>
   <div class="signin-appname">ChronosCalendar.app</div>
   <div class="signin-tagline">Your personal lunar, solar &amp; life events calendar</div>
-  <button class="signin-google-btn" onclick="doSignIn()">
+  <button class="signin-google-btn" onclick="window._fb.signIn()">
     <img src="https://www.google.com/favicon.ico" alt="G" width="16" height="16"> Sign in with Google
   </button>
   <div class="signin-note">Sign in to sync your events across all your devices</div>
@@ -870,297 +868,213 @@ function overlayClick(e){if(e.target===document.getElementById('overlay'))closeM
   saveEventsLocal();render();
 }
 
-// ── FIREBASE CONFIG (SpeakDeck project) ─────────────
-var FB_PROJECT = 'speakdeck-bb76b';
-var FB_API_KEY  = 'AIzaSyAnDJ8sBzs8kY9xwN9yj545H7FJtbVHjCA';
-var CLIENT_ID   = '55277159527-53fbmbof24n7rhs44h6qtp58atcgqe6i.apps.googleusercontent.com';
-var ADMIN_EMAIL = 'thysrany@gmail.com'; // ← your Gmail = admin
+var _user = null;
+var _token = null;
 
-var _user        = null;
-var _token       = null;
-var _tokenClient = null;
-var _refreshTimer = null;
+// ── FIREBASE SYNC — exact SpeakDeck pattern ─────────
+(function(){
+  var PROJECT  = 'speakdeck-bb76b';
+  var API_KEY  = 'AIzaSyAnDJ8sBzs8kY9xwN9yj545H7FJtbVHjCA';
+  var CLIENT_ID= '55277159527-53fbmbof24n7rhs44h6qtp58atcgqe6i.apps.googleusercontent.com';
+  var ADMIN_EMAIL = 'thysrany@gmail.com';
+  var FS_BASE  = 'https://firestore.googleapis.com/v1/projects/'+PROJECT+'/databases/(default)/documents/';
 
-// ── AUTH ─────────────────────────────────────────────
-function doSignIn() {
-  if (typeof google === 'undefined' || !google.accounts) {
-    alert('Sign-in is loading, please try again in a moment.');
-    return;
+  function getSavedUser(){ try{ var u=localStorage.getItem('ch_user'); return u?JSON.parse(u):null; }catch(e){return null;} }
+  function saveUser(u){ try{ localStorage.setItem('ch_user',JSON.stringify(u)); }catch(e){} }
+  function clearUser(){ try{ localStorage.removeItem('ch_user'); }catch(e){} }
+
+  function fsGet(path, token){
+    return fetch('https://firestore.googleapis.com/v1/projects/'+PROJECT+'/databases/(default)/documents/'+path,
+      {headers:{'Authorization':'Bearer '+token}}).then(function(r){return r.ok?r.json():null;});
   }
-  if (!_tokenClient) {
-    _tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: 'profile email https://www.googleapis.com/auth/datastore',
-      callback: onTokenResponse
-    });
+  function fsPatch(path, token, fieldsJson){
+    return fetch('https://firestore.googleapis.com/v1/projects/'+PROJECT+'/databases/(default)/documents/'+path+'?key='+API_KEY,
+      {method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({fields:{eventsJson:{stringValue:fieldsJson}}})});
   }
-  _tokenClient.requestAccessToken({ prompt: '' });
-}
 
-function onTokenResponse(resp) {
-  if (resp.error) return;
-  _token = resp.access_token;
-  var exp = Date.now() + (resp.expires_in - 300) * 1000;
-  localStorage.setItem('ch_token', _token);
-  localStorage.setItem('ch_token_exp', String(exp));
-  // Schedule silent refresh 5 min before expiry
-  if (_refreshTimer) clearTimeout(_refreshTimer);
-  _refreshTimer = setTimeout(function() {
-    if (_tokenClient) _tokenClient.requestAccessToken({ prompt: '' });
-  }, (resp.expires_in - 300) * 1000);
-  // Only fetch user info on first sign-in
-  if (!_user) {
-    fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: 'Bearer ' + _token }
-    }).then(function(r){ return r.json(); }).then(function(info) {
-      _user = { name: info.name, email: info.email, photo: info.picture };
-      localStorage.setItem('ch_user', JSON.stringify(_user));
-      onSignedIn();
-    });
+  var _tokenClient = null;
+  var _refreshTimer = null;
+
+  function scheduleTokenRefresh(expiresIn){
+    clearTimeout(_refreshTimer);
+    var delay = Math.max(0,(expiresIn-300)*1000);
+    _refreshTimer = setTimeout(function(){
+      if(_tokenClient && window._fbUser) _tokenClient.requestAccessToken({prompt:''});
+    }, delay);
   }
-}
 
-function doSignOut() {
-  _user = null; _token = null;
-  if (_refreshTimer) clearTimeout(_refreshTimer);
-  localStorage.removeItem('ch_token');
-  localStorage.removeItem('ch_token_exp');
-  localStorage.removeItem('ch_user');
-  updateAuthUI(false);
-  document.getElementById('signinScreen').classList.remove('hidden');
-  document.getElementById('app').style.display = 'none';
-}
-
-function restoreSession() {
-  var savedUser = localStorage.getItem('ch_user');
-  var savedToken = localStorage.getItem('ch_token');
-  var savedExp = parseInt(localStorage.getItem('ch_token_exp') || '0');
-  if (savedUser && savedToken && Date.now() < savedExp) {
-    _user  = JSON.parse(savedUser);
-    _token = savedToken;
-    var secsLeft = Math.floor((savedExp - Date.now()) / 1000);
-    if (_refreshTimer) clearTimeout(_refreshTimer);
-    _refreshTimer = setTimeout(function() {
-      if (_tokenClient) _tokenClient.requestAccessToken({ prompt: '' });
-    }, secsLeft * 1000);
-    onSignedIn();
-    return true;
+  function applyToken(resp, userInfo){
+    var token = resp.access_token;
+    var exp = resp.expires_in||3600;
+    var u = {uid:userInfo.uid, email:userInfo.email, name:userInfo.displayName, photo:userInfo.photoURL,
+             idToken:token, tokenExpiry:Date.now()+exp*1000};
+    window._fbUser = u;
+    _token = token;
+    _user  = {name:u.name, email:u.email, photo:u.photo};
+    saveUser(u);
+    scheduleTokenRefresh(exp);
+    return token;
   }
-  localStorage.removeItem('ch_token');
-  localStorage.removeItem('ch_token_exp');
-  localStorage.removeItem('ch_user');
-  return false;
-}
 
-function onSignedIn() {
-  var splash = document.getElementById('splash');
-  if (splash) { splash.classList.add('hidden'); splash.style.display = 'none'; }
-  document.getElementById('signinScreen').classList.add('hidden');
-  document.getElementById('app').style.display = '';
-  document.getElementById('app').classList.add('show');
-  updateAuthUI(true);
-  buildCatStrip();
-  render();
-  loadFromFirestore();
-}
-
-function fetchUserInfo() {}
-function scheduleTokenRefresh() {}
-
-
-// ── FIRESTORE REST ────────────────────────────────────
-function fsUrl(docPath) {
-  return 'https://firestore.googleapis.com/v1/projects/' + FB_PROJECT +
-         '/databases/(default)/documents/' + docPath + '?key=' + FB_API_KEY;
-}
-
-function fsWrite(docPath, data) {
-  if (!_token) return;
-  var fields = {};
-  fields['eventsJson'] = { stringValue: JSON.stringify(data) };
-  fetch('https://firestore.googleapis.com/v1/projects/' + FB_PROJECT +
-        '/databases/(default)/documents/' + docPath + '?key=' + FB_API_KEY, {
-    method: 'PATCH',
-    headers: { 'Authorization': 'Bearer ' + _token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fields: fields })
-  });
-}
-
-function fsRead(docPath, cb) {
-  if (!_token) return;
-  fetch(fsUrl(docPath), {
-    headers: { 'Authorization': 'Bearer ' + _token }
-  }).then(function(r) { return r.json(); }).then(function(doc) {
-    if (doc.fields && doc.fields.eventsJson) {
-      try { cb(JSON.parse(doc.fields.eventsJson.stringValue)); } catch(e) { cb(null); }
-    } else { cb(null); }
-  }).catch(function() { cb(null); });
-}
-
-function isAdmin() { return _user && _user.email === ADMIN_EMAIL; }
-
-function loadFromFirestore() {
-  // Load public admin events (visible to all users)
-  fsRead('chronos/adminEvents', function(adminEvts) {
-    var personal = events.filter(function(e) { return !e.isAdmin; });
-    if (adminEvts && adminEvts.length) {
-      var adminMarked = adminEvts.map(function(e) { e.isAdmin = true; e.isPublic = true; return e; });
-      events = personal.concat(adminMarked);
-    } else {
-      events = personal;
+  function doSignIn(){
+    if(typeof google==='undefined'||!google.accounts){ showToast('Sign-in loading...'); return; }
+    if(!_tokenClient){
+      _tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: 'profile email https://www.googleapis.com/auth/datastore',
+        callback: function(resp){
+          if(resp.error){ showToast('Sign-in failed'); return; }
+          fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{'Authorization':'Bearer '+resp.access_token}})
+            .then(function(r){return r.json();}).then(function(info){
+              var ui={uid:info.sub,email:info.email,displayName:info.name,photoURL:info.picture};
+              applyToken(resp,ui);
+              onSignedIn();
+              loadFromFirestore();
+            });
+        }
+      });
     }
-    try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
-    render();
-  });
-  // Load user's own private events
-  if (_user) {
-    var uid = btoa(_user.email).replace(/=/g,'');
-    fsRead('chronos/users_' + uid, function(userEvts) {
-      var pub = events.filter(function(e) { return e.isAdmin && e.isPublic; });
-      if (userEvts && userEvts.length) {
-        events = pub.concat(userEvts);
-      } else {
-        events = pub;
-      }
-      try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
+    _tokenClient.requestAccessToken({prompt:''});
+  }
+
+  function doSignOut(){
+    clearTimeout(_refreshTimer);
+    window._fbUser=null; _token=null; _user=null;
+    clearUser();
+    document.getElementById('signinScreen').classList.remove('hidden');
+    document.getElementById('app').style.display='none';
+    updateAuthUI(false);
+    showToast('Signed out');
+  }
+
+  function isAdmin(){ return _user && _user.email===ADMIN_EMAIL; }
+  window.isAdmin = isAdmin;
+
+  function syncNow(){
+    if(!_token||!window._fbUser) return;
+    var uid = window._fbUser.uid;
+    if(isAdmin()){
+      var pub = events.filter(function(e){return e.isPublic===true;});
+      var priv= events.filter(function(e){return e.isPublic!==true;});
+      fsPatch('chronos/adminEvents', _token, JSON.stringify(pub));
+      fsPatch('chronos/users_'+uid,  _token, JSON.stringify(priv));
+    } else {
+      var personal = events.filter(function(e){return !e.isAdmin;});
+      fsPatch('chronos/users_'+uid, _token, JSON.stringify(personal));
+    }
+    showToast('\u2713 Synced!');
+  }
+  window.syncNow = syncNow;
+
+  function loadFromFirestore(){
+    if(!_token||!window._fbUser) return;
+    var uid = window._fbUser.uid;
+    fsGet('chronos/adminEvents', _token).then(function(doc){
+      var personal = events.filter(function(e){return !e.isAdmin;});
+      if(doc&&doc.fields&&doc.fields.eventsJson){
+        try{
+          var adminEvts = JSON.parse(doc.fields.eventsJson.stringValue);
+          adminEvts = adminEvts.map(function(e){e.isAdmin=true;e.isPublic=true;return e;});
+          events = personal.concat(adminEvts);
+        }catch(ex){ events=personal; }
+      } else { events=personal; }
+      try{localStorage.setItem('ch4d_events',JSON.stringify(events));}catch(ex){}
       render();
-    });
+    }).catch(function(){render();});
+
+    fsGet('chronos/users_'+uid, _token).then(function(doc){
+      var pub = events.filter(function(e){return e.isAdmin&&e.isPublic;});
+      if(doc&&doc.fields&&doc.fields.eventsJson){
+        try{
+          var userEvts = JSON.parse(doc.fields.eventsJson.stringValue);
+          events = pub.concat(userEvts);
+        }catch(ex){ events=pub; }
+      } else { events=pub; }
+      try{localStorage.setItem('ch4d_events',JSON.stringify(events));}catch(ex){}
+      render();
+    }).catch(function(){});
   }
-}
+  window.loadFromFirestore = loadFromFirestore;
 
-function syncNow() {
-  if (!_token || !_user) return;
-  var uid = btoa(_user.email).replace(/=/g,'');
-  if (isAdmin()) {
-    // Public admin events → everyone sees them
-    var publicEvts = events.filter(function(e) { return e.isAdmin && e.isPublic; });
-    fsWrite('chronos/adminEvents', publicEvts);
-    // Private admin events → only saved to admin's personal doc
-    var adminPrivate = events.filter(function(e) { return e.isAdmin && !e.isPublic; });
-    var adminPersonal = events.filter(function(e) { return !e.isAdmin; });
-    fsWrite('chronos/users_' + uid, adminPrivate.concat(adminPersonal));
-  } else {
-    var personalEvts = events.filter(function(e) { return !e.isAdmin; });
-    fsWrite('chronos/users_' + uid, personalEvts);
+  function onSignedIn(){
+    var splash=document.getElementById('splash');
+    if(splash){splash.classList.add('hidden');splash.style.display='none';}
+    document.getElementById('signinScreen').classList.add('hidden');
+    document.getElementById('app').style.display='';
+    document.getElementById('app').classList.add('show');
+    updateAuthUI(true);
+    buildCatStrip();
+    render();
   }
-  showToast('✓ Synced!');
-}
 
-// Override saveEventsLocal to also sync if signed in
-var _origSaveLocal = saveEventsLocal;
-function saveEventsLocal() {
-  try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
-  if (_token && _user) syncNow();
-}
-
-// Override saveEvent to mark admin events
-var _origSaveEvent = saveEvent;
-function saveEvent() {
-  var name=document.getElementById('mName').value.trim(),date=document.getElementById('mDate').value;
-  if(!name){alert('Please enter an event name.');return;}
-  if(!date){alert('Please select a date.');return;}
-  var ev = {
-    id:'u'+Date.now(), name:name, date:date,
-    time:document.getElementById('mTime').value,
-    category:selCat, recur:selRecur,
-    notes:document.getElementById('mNotes').value.trim(),
-    birthYear:document.getElementById('mBYear').value||null,
-    bRel:selCat==='birthday'?selBRel:null,
-    isAdmin: isAdmin()
-  };
-  if (_editingId) { events = events.filter(function(x){ return x.id !== _editingId; }); _editingId = null; }
-  events.push(ev);
-  try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
-  if (_token && _user) syncNow();
-  closeModal(); render();
-}
-
-// ── RESTORE SESSION ───────────────────────────────────
-function restoreSession() {
-  var savedUser  = localStorage.getItem('ch_user');
-  var savedToken = localStorage.getItem('ch_token');
-  var savedExp   = parseInt(localStorage.getItem('ch_token_exp') || '0');
-  if (savedUser && savedToken && Date.now() < savedExp) {
-    _user  = JSON.parse(savedUser);
-    _token = savedToken;
-    var secsLeft = Math.floor((savedExp - Date.now()) / 1000);
-    scheduleTokenRefresh(secsLeft);
-    onSignedIn();
-    return true;
+  function updateAuthUI(signedIn){
+    var addBtn=document.getElementById('addBtn');
+    var chip=document.getElementById('userChip');
+    var syncBtn=document.getElementById('syncNavBtn');
+    if(signedIn&&_user){
+      if(addBtn) addBtn.style.display='';
+      if(syncBtn) syncBtn.style.display='';
+      var admin=isAdmin();
+      chip.style.display='flex';
+      chip.style.alignItems='center';
+      chip.style.gap='6px';
+      chip.innerHTML=
+        (_user.photo?'<img src="'+_user.photo+'" alt="" style="width:28px;height:28px;border-radius:50%;border:2px solid var(--gold);flex-shrink:0">':'')+
+        '<div style="display:flex;flex-direction:column;align-items:flex-start;gap:1px">'+
+          (admin?'<span class="admin-badge">ADMIN</span>':'<span style="font-size:10px;color:rgba(255,255,255,0.7)">'+(_user.name||'').split(' ')[0]+'</span>')+
+          '<button class="signout-btn" style="padding:0;font-size:10px" onclick="window._fb.signOut()">Sign out</button>'+
+        '</div>';
+    } else {
+      if(addBtn) addBtn.style.display='none';
+      if(syncBtn) syncBtn.style.display='none';
+      chip.style.display='none';
+      chip.innerHTML='';
+    }
   }
-  // Clear stale data
-  localStorage.removeItem('ch_token');
-  localStorage.removeItem('ch_token_exp');
-  localStorage.removeItem('ch_user');
-  return false;
-}
+  window.updateAuthUI = updateAuthUI;
+
+  // ── Expose ──
+  window._fb = { signIn: doSignIn, signOut: doSignOut };
+
+  // ── Restore session ──
+  var saved = getSavedUser();
+  if(saved){
+    var expired = saved.tokenExpiry && Date.now() > saved.tokenExpiry - 60000;
+    if(!expired && saved.idToken){
+      window._fbUser = saved;
+      _token = saved.idToken;
+      _user  = {name:saved.name, email:saved.email, photo:saved.photo};
+      var remaining = saved.tokenExpiry ? Math.floor((saved.tokenExpiry-Date.now())/1000) : 3600;
+      // Load GIS and schedule refresh silently
+      var s=document.createElement('script');
+      s.src='https://accounts.google.com/gsi/client';
+      s.onload=function(){
+        _tokenClient=google.accounts.oauth2.initTokenClient({
+          client_id:CLIENT_ID,
+          scope:'profile email https://www.googleapis.com/auth/datastore',
+          callback:function(resp){
+            if(resp.error) return;
+            applyToken(resp,{uid:saved.uid,email:saved.email,displayName:saved.name,photoURL:saved.photo});
+          }
+        });
+        scheduleTokenRefresh(remaining);
+      };
+      document.head.appendChild(s);
+      onSignedIn();
+      loadFromFirestore();
+    } else {
+      clearUser();
+    }
+  }
+})();
 
 
-var _actionId = null;
-var _editingId = null;
-
-function openActionSheet(id) {
-  var e = null;
-  for (var i=0; i<events.length; i++) { if (events[i].id===id) { e=events[i]; break; } }
-  if (!e) return;
-  _actionId = id;
-  var cat = getCat(e.category);
-  document.getElementById('asTitle').textContent = stripEmoji(e.name);
-  var parts = e.date.split('-');
-  var meta = cat.label + '  |  ' + MONTHS_S[parseInt(parts[1])-1] + ' ' + parts[2] + ', ' + parts[0];
-  if (e.time) meta += '  |  ' + fmtTime(e.time);
-  if (e.notes) meta += '\n' + e.notes;
-  document.getElementById('asMeta').textContent = meta;
-  document.getElementById('actionSheet').style.display = 'block';
-}
-
-function closeActionSheet() {
-  document.getElementById('actionSheet').style.display = 'none';
-  _actionId = null;
-}
-
-function deleteEventFromSheet() {
-  if (!_actionId) return;
-  if (!confirm('Delete this event?')) return;
-  events = events.filter(function(ev){ return ev.id !== _actionId; });
-  try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(ex){}
-  if (_token && _user) syncNow();
-  closeActionSheet();
-  render();
-}
-
-function startEditEvent() {
-  if (!_actionId) return;
-  var e = null;
-  for (var i=0; i<events.length; i++) { if (events[i].id===_actionId) { e=events[i]; break; } }
-  if (!e) return;
-  _editingId = _actionId;
-  closeActionSheet();
-  selCat = e.category; selRecur = e.recur || 'once';
-  selVisibility = e.isPublic ? 'public' : 'private';
-  selBRel = e.bRel || 'friend';
-  document.getElementById('mName').value = e.name;
-  document.getElementById('mDate').value = e.date;
-  document.getElementById('mTime').value = e.time || '';
-  document.getElementById('mNotes').value = e.notes || '';
-  document.getElementById('mBYear').value = e.birthYear || '';
-  buildCatGrid(); setRecur(selRecur); setVisibility(selVisibility); setBRel(selBRel);
-  document.getElementById('byr-row').className = (selCat==='birthday') ? 'show' : '';
-  document.getElementById('lunarHint').className = 'lunar-hint' + (selCat==='lunar-solar' ? ' show' : '');
-  var vRow = document.getElementById('visibilityRow');
-  if (vRow) vRow.style.display = isAdmin() ? 'block' : 'none';
-  document.getElementById('overlay').classList.add('show');
-}
-
-
-// ── MIGRATE old localStorage keys into current key ───
 function migrateStorage() {
   var OLD_KEYS = ['ch_events','ch3_events','ch4_events','ch4b_events','ch4c_events'];
   var current = [];
   try { current = JSON.parse(localStorage.getItem('ch4d_events') || '[]'); } catch(e){ current = []; }
   var currentIds = {};
   for (var i=0; i<current.length; i++) currentIds[current[i].id] = true;
-
   var merged = false;
   for (var k=0; k<OLD_KEYS.length; k++) {
     var raw = localStorage.getItem(OLD_KEYS[k]);
@@ -1168,74 +1082,12 @@ function migrateStorage() {
     try {
       var old = JSON.parse(raw);
       for (var j=0; j<old.length; j++) {
-        if (!currentIds[old[j].id]) {
-          current.push(old[j]);
-          currentIds[old[j].id] = true;
-          merged = true;
-        }
+        if (!currentIds[old[j].id]) { current.push(old[j]); currentIds[old[j].id]=true; merged=true; }
       }
     } catch(e) {}
   }
-  if (merged) {
-    try { localStorage.setItem('ch4d_events', JSON.stringify(current)); } catch(e){}
-  }
+  if (merged) { try { localStorage.setItem('ch4d_events', JSON.stringify(current)); } catch(e){} }
 }
-
-
-
-var _monthSheetYear = null;
-var _monthSheetMonth = null;
-
-function buildMonthText(year, month) {
-  var savedTime = timeFilter;
-  timeFilter = 'all';
-  var allItems = getFiltered().filter(function(item) {
-    return item.date.getFullYear() === year && item.date.getMonth() === month;
-  });
-  timeFilter = savedTime;
-  if (!allItems.length) return '';
-  var lines = [MONTHS[month] + ' ' + year, ''];
-  var lastDay = -1;
-  for (var i = 0; i < allItems.length; i++) {
-    var item = allItems[i], e = item.ev, d = item.date;
-    if (d.getDate() !== lastDay) {
-      if (lastDay !== -1) lines.push('');
-      lines.push(DNAMES[d.getDay()] + ' ' + MONTHS_S[d.getMonth()] + ' ' + d.getDate());
-      lastDay = d.getDate();
-    }
-    var name = stripEmoji(e.name);
-    var time = e.time ? ' - ' + fmtTime(e.time) : '';
-    var note = e.notes ? ' (' + e.notes + ')' : '';
-    var age  = e.birthYear ? ' - turns ' + (year - parseInt(e.birthYear)) : '';
-    lines.push('  ' + name + time + age + note);
-  }
-  return lines.join('\n');
-}
-
-function openMonthSheet(year, month) {
-  _monthSheetYear = year;
-  _monthSheetMonth = month;
-  document.getElementById('monthSheetTitle').textContent = MONTHS[month] + ' ' + year;
-  document.getElementById('monthSheet').style.display = 'block';
-}
-
-function closeMonthSheet() {
-  document.getElementById('monthSheet').style.display = 'none';
-}
-
-
-
-
-// Event delegation for month action button
-document.getElementById('eventList').addEventListener('click', function(ev) {
-  var btn = ev.target;
-  if (btn && btn.classList && btn.classList.contains('maction-btn')) {
-    ev.stopPropagation();
-    var id = btn.id; // mab-2025-5
-    var parts = id.split('-');
-    openMonthSheet(parseInt(parts[1]), parseInt(parts[2]));
-  }
-});
 
 // ── INIT ─────────────────────────────────────────────
 migrateStorage();
@@ -1280,9 +1132,9 @@ document.getElementById('eventList').addEventListener('click', function(ev) {
 });
 
 // Show sign-in screen by default, restore session if available
-// Show sign-in screen by default, restore session if available
+// Auth handled by IIFE above — show sign-in if not restored
 document.getElementById('app').style.display = 'none';
-if (!restoreSession()) {
+if (!window._fbUser) {
   document.getElementById('signinScreen').classList.remove('hidden');
 }
 </script>
@@ -1335,8 +1187,6 @@ if (!restoreSession()) {
 <title>ChronosCalendar.app</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%230f0c29'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='35%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23cbd5e1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='200' cy='200' r='200' fill='url(%23a)'/%3E%3Ccircle cx='200' cy='200' r='185' fill='none' stroke='%23f59e0b' stroke-width='6' opacity='0.6'/%3E%3Ccircle cx='200' cy='185' r='100' fill='url(%23b)'/%3E%3Ccircle cx='245' cy='168' r='88' fill='url(%23a)'/%3E%3Ccircle cx='148' cy='103' r='8' fill='%23fde68a'/%3E%3Ccircle cx='310' cy='130' r='9' fill='%23fde68a' opacity='0.9'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%230f0c29'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='35%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23cbd5e1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='200' cy='200' r='200' fill='url(%23a)'/%3E%3Ccircle cx='200' cy='200' r='185' fill='none' stroke='%23f59e0b' stroke-width='6' opacity='0.6'/%3E%3Ccircle cx='200' cy='185' r='100' fill='url(%23b)'/%3E%3Ccircle cx='245' cy='168' r='88' fill='url(%23a)'/%3E%3Ccircle cx='148' cy='103' r='8' fill='%23fde68a'/%3E%3Ccircle cx='310' cy='130' r='9' fill='%23fde68a' opacity='0.9'/%3E%3C/svg%3E">
-<script src="https://accounts.google.com/gsi/client"></script>
-<script src="https://accounts.google.com/gsi/client"></script>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
@@ -1499,7 +1349,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
   <div style="font-size:52px;line-height:1">🌙</div>
   <div class="signin-appname">ChronosCalendar.app</div>
   <div class="signin-tagline">Your personal lunar, solar &amp; life events calendar</div>
-  <button class="signin-google-btn" onclick="doSignIn()">
+  <button class="signin-google-btn" onclick="window._fb.signIn()">
     <img src="https://www.google.com/favicon.ico" alt="G" width="16" height="16"> Sign in with Google
   </button>
   <div class="signin-note">Sign in to sync your events across all your devices</div>
