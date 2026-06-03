@@ -656,7 +656,7 @@ function copyMonth(year, month, btn) {
   });
   timeFilter = savedTime;
   if (!allItems.length) {
-    if (btn) { btn.textContent = 'No events'; setTimeout(function(){ btn.textContent = 'Share'; btn.style.color=''; }, 2000); }
+    if (btn) { btn.textContent = 'No events'; setTimeout(function(){ btn.textContent = 'Share'; }, 2000); }
     return;
   }
   var lines = [MONTHS[month] + ' ' + year, ''];
@@ -668,7 +668,6 @@ function copyMonth(year, month, btn) {
       lines.push(DNAMES[d.getDay()] + ' ' + MONTHS_S[d.getMonth()] + ' ' + d.getDate());
       lastDay = d.getDate();
     }
-    var cat = getCat(e.category);
     var name = stripEmoji(e.name);
     var time = e.time ? ' - ' + fmtTime(e.time) : '';
     var note = e.notes ? ' (' + e.notes + ')' : '';
@@ -676,14 +675,30 @@ function copyMonth(year, month, btn) {
     lines.push('  ' + name + time + age + note);
   }
   var txt = lines.join('\n');
-  copyText(txt,
-    function() {
-      if (btn) { btn.textContent = 'Copied!'; btn.style.color = '#c9a84c'; setTimeout(function(){ btn.textContent = 'Share'; btn.style.color = ''; }, 2000); }
-    },
-    function() {
-      if (btn) { btn.textContent = 'Failed'; btn.style.color = '#f87171'; setTimeout(function(){ btn.textContent = 'Share'; btn.style.color = ''; }, 2000); }
-    }
-  );
+
+  // INLINE copy — identical to copyQuote which works
+  var done = false;
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = txt;
+    ta.contentEditable = true;
+    ta.readOnly = false;
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:60px;opacity:0.01;z-index:-1;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, txt.length);
+    done = document.execCommand('copy');
+    document.body.removeChild(ta);
+  } catch(e) { done = false; }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(function(){}).catch(function(){});
+  }
+  if (btn) {
+    btn.textContent = 'Copied!';
+    btn.style.color = '#c9a84c';
+    setTimeout(function(){ btn.textContent = 'Share'; btn.style.color = ''; }, 2000);
+  }
 }
 
 function fallbackCopy2(txt, month, btn) {
@@ -724,7 +739,7 @@ function render() {
   var html='';
   for(var mi=0;mi<monthOrder.length;mi++){
     var mg=months[monthOrder[mi]];
-    html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class="month-copy-btn" onclick="copyMonth('+mg.y+','+mg.m+',this)">\u21d1 Share</button></div>';
+    html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class="month-copy-btn" data-year="'+mg.y+'" data-month="'+mg.m+'">⦿ Copy</button></div>';
     for(var ii=0;ii<mg.items.length;ii++){
       var item=mg.items[ii],e=item.ev,d=item.date,cat=getCat(e.category);
       var isToday=d.getTime()===now.getTime();
@@ -744,6 +759,15 @@ function render() {
     }
   }
   list.innerHTML=html;
+  var cbs=list.querySelectorAll('.month-copy-btn');
+  for(var ci=0;ci<cbs.length;ci++){
+    (function(b){
+      b.addEventListener('click',function(ev){
+        ev.stopPropagation();
+        copyMonth(parseInt(b.getAttribute('data-year')),parseInt(b.getAttribute('data-month')),b);
+      });
+    })(cbs[ci]);
+  }
 }
 
 // ── MODAL ─────────────────────────────────────────────
