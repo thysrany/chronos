@@ -151,7 +151,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 .cal-month-title { font-size:15px; font-weight:700; color:var(--text); }
 .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); padding:0 4px; }
 .cal-dow { text-align:center; font-size:9px; font-weight:700; color:var(--muted); padding:8px 0 4px; text-transform:uppercase; letter-spacing:.05em; }
-.cal-day { min-height:52px; padding:3px 2px; display:flex; flex-direction:column; align-items:center; border-top:1px solid var(--border); cursor:pointer; }
+.cal-day { min-height:60px; padding:3px 2px; display:flex; flex-direction:column; align-items:center; border-top:1px solid var(--border); cursor:pointer; }
 .cal-day.other-month { opacity:0.3; }
 .cal-day.today-day .cal-num { background:var(--gold); color:#0d1117; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; }
 .cal-num { font-size:12px; font-weight:600; color:var(--text); line-height:22px; width:22px; text-align:center; }
@@ -1409,108 +1409,105 @@ function showCalView() {
 function renderCalView() {
   var cv = document.getElementById('calView');
   if (!cv || cv.style.display === 'none') return;
+  var y = _calDate.getFullYear();
+  var m = _calDate.getMonth();
+  var today = today0();
+
+  // ── Build moon/solar maps for this month ──
+  var moonMap = {};
+  var phaseList = [];
+  events.forEach(function(e) {
+    if (e.category !== 'lunar' && e.category !== 'solar') return;
+    var d = new Date(e.date + 'T00:00:00');
+    if (d.getFullYear() !== y || d.getMonth() !== m) return;
+    var icon = e.name.indexOf('🌑') >= 0 ? '🌑' :
+               e.name.indexOf('🌓') >= 0 ? '🌓' :
+               e.name.indexOf('🌕') >= 0 ? '🌕' :
+               e.name.indexOf('🌗') >= 0 ? '🌗' :
+               e.name.indexOf('🌸') >= 0 ? '🌸' :
+               e.name.indexOf('☀️') >= 0 ? '☀️' :
+               e.name.indexOf('🍂') >= 0 ? '🍂' :
+               e.name.indexOf('❄️') >= 0 ? '❄️' : '';
+    if (icon) {
+      moonMap[d.getDate()] = icon;
+      phaseList.push({ day: d.getDate(), icon: icon, name: stripEmoji(e.name), notes: e.notes || '' });
+    }
+  });
+  phaseList.sort(function(a,b){ return a.day - b.day; });
+
+  // ── Event dots map ──
+  var evMap = {};
+  events.forEach(function(e) {
+    if (e.category === 'lunar' || e.category === 'solar') return;
+    var d = new Date(e.date + 'T00:00:00');
+    if (d.getFullYear() !== y || d.getMonth() !== m) return;
+    var cat = getCat(e.category);
+    if (!evMap[d.getDate()]) evMap[d.getDate()] = [];
+    evMap[d.getDate()].push(cat.color);
+  });
+
+  // ── Header ──
   var html = '<div class="cal-nav">' +
     '<button class="cal-nav-btn" onclick="calMove(-1)">‹</button>' +
-    '<div class="cal-month-title">' + MONTHS[_calDate.getMonth()] + ' ' + _calDate.getFullYear() + '</div>' +
+    '<div class="cal-month-title">' + MONTHS[m] + ' ' + y + '</div>' +
     '<button class="cal-nav-btn" onclick="calMove(1)">›</button>' +
     '</div>';
 
-  // Build 3-month view: prev, current, next
-  var months = [];
-  for (var mo = -1; mo <= 2; mo++) {
-    var d = new Date(_calDate.getFullYear(), _calDate.getMonth() + mo, 1);
-    months.push(d);
+  // ── Day-of-week headers ──
+  html += '<div class="cal-grid">';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(function(d) {
+    html += '<div class="cal-dow">' + d + '</div>';
+  });
+
+  // ── Grid days ──
+  var firstDow = new Date(y, m, 1).getDay();
+  var daysInMonth = new Date(y, m+1, 0).getDate();
+  var daysInPrev  = new Date(y, m, 0).getDate();
+
+  for (var p = firstDow - 1; p >= 0; p--) {
+    html += '<div class="cal-day other-month"><span class="cal-num">' + (daysInPrev - p) + '</span></div>';
   }
-
-  months.forEach(function(monthStart) {
-    var y = monthStart.getFullYear();
-    var m = monthStart.getMonth();
-    var today = today0();
-
-    html += '<div class="cal-month-block">';
-    html += '<div class="cal-month-hdr">' + MONTHS[m] + ' ' + y + '</div>';
-    html += '<div class="cal-grid">';
-
-    // Day of week headers
-    ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(function(d) {
-      html += '<div class="cal-dow">' + d + '</div>';
-    });
-
-    // Find moon phases for this month
-    var moonMap = {};
-    events.forEach(function(e) {
-      if (e.category !== 'lunar') return;
-      var d = new Date(e.date + 'T00:00:00');
-      if (d.getFullYear() === y && d.getMonth() === m) {
-        var icon = e.name.indexOf('🌑') >= 0 ? '🌑' :
-                   e.name.indexOf('🌓') >= 0 ? '🌓' :
-                   e.name.indexOf('🌕') >= 0 ? '🌕' :
-                   e.name.indexOf('🌗') >= 0 ? '🌗' : '';
-        moonMap[d.getDate()] = icon;
-      }
-    });
-
-    // Find other events for dots
-    var evMap = {};
-    events.forEach(function(e) {
-      if (e.category === 'lunar' || e.category === 'solar') return;
-      var d = new Date(e.date + 'T00:00:00');
-      if (d.getFullYear() === y && d.getMonth() === m) {
-        var cat = getCat(e.category);
-        if (!evMap[d.getDate()]) evMap[d.getDate()] = [];
-        evMap[d.getDate()].push(cat.color);
-      }
-    });
-
-    // Solar events
-    var solarMap = {};
-    events.forEach(function(e) {
-      if (e.category !== 'solar') return;
-      var d = new Date(e.date + 'T00:00:00');
-      if (d.getFullYear() === y && d.getMonth() === m) {
-        var icon = e.name.indexOf('🌸') >= 0 ? '🌸' :
-                   e.name.indexOf('☀️') >= 0 ? '☀️' :
-                   e.name.indexOf('🍂') >= 0 ? '🍂' :
-                   e.name.indexOf('❄️') >= 0 ? '❄️' : '☀️';
-        solarMap[d.getDate()] = icon;
-      }
-    });
-
-    // Grid start — pad to first day of week
-    var firstDow = monthStart.getDay();
-    var daysInMonth = new Date(y, m+1, 0).getDate();
-    var daysInPrev  = new Date(y, m, 0).getDate();
-
-    // Previous month padding
-    for (var p = firstDow - 1; p >= 0; p--) {
-      html += '<div class="cal-day other-month"><span class="cal-num">' + (daysInPrev - p) + '</span></div>';
+  for (var day = 1; day <= daysInMonth; day++) {
+    var isToday = (new Date(y, m, day).getTime() === today.getTime());
+    html += '<div class="cal-day' + (isToday ? ' today-day' : '') + '">';
+    html += '<span class="cal-num">' + day + '</span>';
+    if (moonMap[day]) {
+      var phaseName = moonNameMap[day] || '';
+      var shortName = phaseName.replace('First Quarter','1st Qtr').replace('Last Quarter','Last Qtr').replace('New Moon','New').replace('Full Moon','Full');
+      html += '<span class="cal-moon">' + moonMap[day] + '</span>';
+      html += '<span style="font-size:7px;color:var(--gold);text-align:center;line-height:1;margin-top:1px;">' + shortName + '</span>';
     }
-
-    // Days in month
-    for (var day = 1; day <= daysInMonth; day++) {
-      var isToday = (new Date(y, m, day).getTime() === today.getTime());
-      html += '<div class="cal-day' + (isToday ? ' today-day' : '') + '">';
-      html += '<span class="cal-num">' + day + '</span>';
-      if (moonMap[day])  html += '<span class="cal-moon">' + moonMap[day] + '</span>';
-      if (solarMap[day]) html += '<span class="cal-moon">' + solarMap[day] + '</span>';
-      if (evMap[day]) {
-        html += '<div style="display:flex;gap:2px;margin-top:2px;flex-wrap:wrap;justify-content:center">';
-        evMap[day].slice(0, 3).forEach(function(color) {
-          html += '<div class="cal-dot" style="background:' + color + '"></div>';
-        });
-        html += '</div>';
-      }
+    if (evMap[day]) {
+      html += '<div style="display:flex;gap:2px;margin-top:2px;flex-wrap:wrap;justify-content:center">';
+      evMap[day].slice(0,3).forEach(function(color) {
+        html += '<div class="cal-dot" style="background:' + color + '"></div>';
+      });
       html += '</div>';
     }
+    html += '</div>';
+  }
+  var remaining = (7 - ((firstDow + daysInMonth) % 7)) % 7;
+  for (var n = 1; n <= remaining; n++) {
+    html += '<div class="cal-day other-month"><span class="cal-num">' + n + '</span></div>';
+  }
+  html += '</div>'; // end grid
 
-    // Next month padding
-    var remaining = (7 - ((firstDow + daysInMonth) % 7)) % 7;
-    for (var n = 1; n <= remaining; n++) {
-      html += '<div class="cal-day other-month"><span class="cal-num">' + n + '</span></div>';
-    }
-
-    html += '</div></div>'; // end grid + month block
-  });
+  // ── Phase list ──
+  if (phaseList.length) {
+    html += '<div style="padding:1rem 1rem 0;">';
+    html += '<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Moon Phases</div>';
+    phaseList.forEach(function(p) {
+      var ordinal = p.day + (p.day===1||p.day===21||p.day===31?'st':p.day===2||p.day===22?'nd':p.day===3||p.day===23?'rd':'th');
+      html += '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">' +
+        '<span style="font-size:22px;width:28px;text-align:center;">' + p.icon + '</span>' +
+        '<div>' +
+          '<div style="font-size:14px;font-weight:600;color:var(--text);">' + MONTHS_S[m] + ' ' + ordinal + ' · ' + p.name + '</div>' +
+          (p.notes ? '<div style="font-size:11px;color:var(--muted);margin-top:1px;">' + p.notes + '</div>' : '') +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+  }
 
   cv.innerHTML = html;
 }
