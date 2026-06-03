@@ -814,10 +814,9 @@ function saveEvent(){
     isPublic: isAdmin() ? (selVisibility==='public') : false
   };
   if (_editingId) { events = events.filter(function(x){ return x.id !== _editingId; }); _editingId = null; }
-  if (_editingId) { events = events.filter(function(x){ return x.id !== _editingId; }); _editingId = null; }
   events.push(ev);
   try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
-  if (_token && _user) window._fbSync();
+  if (_token && _user) window.syncNow();
   closeModal(); render();
 }
 function delEvent(id,e){
@@ -851,6 +850,19 @@ function updateAuthUI(signedIn) {
     if (fab)     fab.style.display     = 'none';
     chip.style.display = 'none'; chip.innerHTML = '';
   }
+}
+
+
+function onSignedIn() {
+  var splash = document.getElementById('splash');
+  if (splash) { splash.classList.add('hidden'); splash.style.display='none'; }
+  document.getElementById('signinScreen').classList.add('hidden');
+  document.getElementById('app').style.display = '';
+  document.getElementById('app').classList.add('show');
+  var fab = document.getElementById('fab'); if (fab) fab.style.display = 'flex';
+  updateAuthUI(true);
+  buildCatStrip();
+  render();
 }
 
 // ── FIREBASE SYNC (exact SpeakDeck pattern) ─────────
@@ -981,6 +993,7 @@ function updateAuthUI(signedIn) {
 
   window.isAdmin       = function(){ return _user&&_user.email===ADMIN; };
   window.syncNow       = doSync;
+  window._fbSync       = doSync;
   window.loadFromFirestore = function(){ var s=getSaved(); if(s&&s.uid) doLoad(s.uid); };
   window.doSignIn      = doSignIn;
   window.doSignOut     = doSignOut;
@@ -1052,3 +1065,4 @@ if (_user) {
 } else {
   document.getElementById('signinScreen').classList.remove('hidden');
 }
+
