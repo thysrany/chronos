@@ -240,8 +240,9 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
         <div style="margin-top:8px">
           <label class="flabel">Relationship</label>
           <div class="togrow">
-            <button class="togbtn on" id="bRelFriend" onclick="setBRel('friend')">👫 Friend</button>
+            <button class="togbtn on" id="bRelFriend" onclick="setBRel('friend')">👫 Friends</button>
             <button class="togbtn" id="bRelFamily" onclick="setBRel('family')">👨‍👩‍👧 Family</button>
+            <button class="togbtn" id="bRelEvent" onclick="setBRel('event')">🎉 Event</button>
           </div>
         </div>
       </div>
@@ -744,7 +745,7 @@ function render() {
       else{var col=diff>=0?'var(--text)':'var(--dim)';rightHtml='<div class="ev-right"><div class="ev-dnum" style="color:'+col+'">'+Math.abs(diff)+'</div><div class="ev-dlbl">'+(diff>=0?'days left':'days ago')+'</div></div>';}
       html+='<div class="event-item'+(isToday?' today-item':'')+'" onclick="openEdit(\''+e.id+'\')">' +
         '<div class="ev-avatar" style="background:var(--bg3)">'+icon+'</div>' +
-        '<div class="ev-info"><div class="ev-name">'+stripEmoji(e.name)+'</div>'+(e.bRel?'<div class="ev-rel">'+(e.bRel==='family'?'👨‍👩‍👧 Family':'👫 Friend')+'</div>':'')+'<div class="ev-date">'+dateStr+'</div>'+(e.notes?'<div class="ev-sub">'+e.notes+'</div>':'')+'<div class="'+cdClass+'">'+cdText+'</div></div>' +
+        '<div class="ev-info"><div class="ev-name">'+stripEmoji(e.name)+'</div>'+(e.bRel?'<div class="ev-rel">'+(e.bRel==='family'?'👨‍👩‍👧 Family':e.bRel==='event'?'🎉 Event':'👫 Friends')+'</div>':'')+'<div class="ev-date">'+dateStr+'</div>'+(e.notes?'<div class="ev-sub">'+e.notes+'</div>':'')+'<div class="'+cdClass+'">'+cdText+'</div></div>' +
         rightHtml+'</div>';
     }
   }
