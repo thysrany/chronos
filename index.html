@@ -497,19 +497,10 @@ function copyQuote() { doCopy(null); }
 function doCopy(btn) {
   if (!curQuote) return;
   var txt = '\u201c' + curQuote.t + '\u201d \u2014 ' + curQuote.a + (curQuote.r ? '\n\n' + curQuote.r : '');
-
-  // Show feedback immediately — before anything async
   var b = btn || document.getElementById('cpBtn');
   var orig = b ? b.textContent : '';
-  if (b) { b.textContent = '\u2713 Copied!'; b.style.color = '#c9a84c'; b.style.borderColor = '#c9a84c'; }
-  setTimeout(function() {
-    if (b) { b.textContent = orig; b.style.color = ''; b.style.borderColor = ''; }
-  }, 2000);
 
-  // Try all copy methods
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(txt).catch(function() {});
-  }
+  // Use execCommand — confirmed working on this device
   try {
     var ta = document.createElement('textarea');
     ta.value = txt;
@@ -517,9 +508,21 @@ function doCopy(btn) {
     document.body.appendChild(ta);
     ta.focus();
     ta.setSelectionRange(0, 99999);
-    document.execCommand('copy');
+    var ok = document.execCommand('copy');
     document.body.removeChild(ta);
-  } catch(e) {}
+    if (b) {
+      b.textContent = ok ? '\u2713 Copied!' : '\u2717 Try again';
+      b.style.color = ok ? '#c9a84c' : '#f87171';
+      b.style.borderColor = ok ? '#c9a84c' : '#f87171';
+      setTimeout(function() {
+        b.textContent = orig;
+        b.style.color = '';
+        b.style.borderColor = '';
+      }, 2000);
+    }
+  } catch(e) {
+    if (b) { b.textContent = '\u2717 Error'; b.style.color = '#f87171'; }
+  }
 }
 
 // fallbackCopy replaced by doCopy
