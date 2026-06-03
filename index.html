@@ -531,10 +531,18 @@ function enterApp() {
   var s = document.getElementById('splash');
   s.classList.add('hidden');
   setTimeout(function() {
-    s.style.display='none';
-    document.getElementById('app').classList.add('show');
-    buildCatStrip();
-    render();
+    s.style.display = 'none';
+    // If already signed in, go straight to app
+    if (_user && _token) {
+      document.getElementById('signinScreen').classList.add('hidden');
+      document.getElementById('app').style.display = '';
+      document.getElementById('app').classList.add('show');
+      buildCatStrip();
+      render();
+    } else {
+      // Show sign-in screen
+      document.getElementById('signinScreen').classList.remove('hidden');
+    }
   }, 700);
 }
 
@@ -847,8 +855,12 @@ function fetchUserInfo() {
 }
 
 function onSignedIn() {
+  // Hide splash if still showing
+  var splash = document.getElementById('splash');
+  if (splash) { splash.classList.add('hidden'); splash.style.display = 'none'; }
   document.getElementById('signinScreen').classList.add('hidden');
   document.getElementById('app').style.display = '';
+  document.getElementById('app').classList.add('show');
   updateAuthUI(true);
   loadFromFirestore();
 }
