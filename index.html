@@ -199,6 +199,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
       <button class="ftab" data-t="past" onclick="setTime('past')">Past</button>
       <div style="flex:1"></div>
       <button class="ftab" onclick="goHome()" title="Quote">🏠</button>
+      <button class="ftab" id="monthCopyBarBtn" onclick="copyVisibleMonth()" title="Copy month">⧉</button>
     </div>
   </div>
 
@@ -1185,6 +1186,23 @@ document.getElementById('eventList').addEventListener('click', function(ev) {
   }
 });
 
+
+function copyVisibleMonth() {
+  // Find first visible month header
+  var hdr = document.querySelector('.month-header');
+  if (!hdr) { return; }
+  var y = parseInt(hdr.getAttribute('data-year'));
+  var m = parseInt(hdr.getAttribute('data-month'));
+  var txt = buildMonthText(y, m);
+  if (!txt) { return; }
+  var btn = document.getElementById('monthCopyBarBtn');
+  var orig = btn ? btn.textContent : '';
+  copyText(txt,
+    function() { if (btn) { btn.textContent = '\u2713'; btn.style.color = '#c9a84c'; setTimeout(function(){ btn.textContent = orig; btn.style.color = ''; }, 2000); } },
+    function() { if (btn) { btn.textContent = '\u2717'; btn.style.color = '#f87171'; setTimeout(function(){ btn.textContent = orig; btn.style.color = ''; }, 2000); } }
+  );
+}
+
 // ── INIT ─────────────────────────────────────────────
 migrateStorage();
 loadTheme();
@@ -1196,6 +1214,7 @@ initSplash();
 window.addEventListener('load', function() {
 document.getElementById('monthCopyBtn').onclick = function() {
   var txt = buildMonthText(_monthSheetYear, _monthSheetMonth);
+  alert('txt length=' + txt.length + ' year=' + _monthSheetYear + ' month=' + _monthSheetMonth);
   if (!txt) { closeMonthSheet(); return; }
   // Exact same code as copyQuote which works
   var btn = document.getElementById('monthCopyBtn');
