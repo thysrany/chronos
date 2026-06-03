@@ -817,8 +817,20 @@ function saveEvent(){
   var name=document.getElementById('mName').value.trim(),date=document.getElementById('mDate').value;
   if(!name){alert('Please enter an event name.');return;}
   if(!date){alert('Please select a date.');return;}
-  events.push({id:'u'+Date.now(),name:name,date:date,time:document.getElementById('mTime').value,category:selCat,recur:selRecur,notes:document.getElementById('mNotes').value.trim(),birthYear:document.getElementById('mBYear').value||null,bRel:selCat==='birthday'?selBRel:null});
-  saveEventsLocal();closeModal();render();
+  var ev = {
+    id:'u'+Date.now(), name:name, date:date,
+    time:document.getElementById('mTime').value,
+    category:selCat, recur:selRecur,
+    notes:document.getElementById('mNotes').value.trim(),
+    birthYear:document.getElementById('mBYear').value||null,
+    bRel:selCat==='birthday'?selBRel:null,
+    isAdmin: isAdmin(),
+    isPublic: isAdmin() ? (selVisibility==='public') : false
+  };
+  events.push(ev);
+  try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
+  if (_token && _user) syncNow();
+  closeModal(); render();
 }
 function delEvent(id,e){
   e.stopPropagation();
@@ -954,27 +966,30 @@ function fsRead(docPath, cb) {
 function isAdmin() { return _user && _user.email === ADMIN_EMAIL; }
 
 function loadFromFirestore() {
-  // Load admin events (visible to everyone)
+  // Load public admin events (visible to all users)
   fsRead('chronos/adminEvents', function(adminEvts) {
+    var personal = events.filter(function(e) { return !e.isAdmin; });
     if (adminEvts && adminEvts.length) {
-      // Merge: keep user's personal events, replace admin events
-      var personal = events.filter(function(e) { return !e.isAdmin; });
-      var adminMarked = adminEvts.map(function(e) { e.isAdmin = true; return e; });
+      var adminMarked = adminEvts.map(function(e) { e.isAdmin = true; e.isPublic = true; return e; });
       events = personal.concat(adminMarked);
-      saveEventsLocal();
-      render();
+    } else {
+      events = personal;
     }
+    try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
+    render();
   });
-  // Load user's personal events from their own doc
+  // Load user's own private events
   if (_user) {
     var uid = btoa(_user.email).replace(/=/g,'');
     fsRead('chronos/users_' + uid, function(userEvts) {
+      var pub = events.filter(function(e) { return e.isAdmin && e.isPublic; });
       if (userEvts && userEvts.length) {
-        var admin = events.filter(function(e) { return e.isAdmin; });
-        events = admin.concat(userEvts);
-        saveEventsLocal();
-        render();
+        events = pub.concat(userEvts);
+      } else {
+        events = pub;
       }
+      try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
+      render();
     });
   }
 }
