@@ -842,7 +842,7 @@ function render() {
       var isToday=d.getTime()===now.getTime();
       var diff=Math.round((d-now)/86400000);
       var icon=e.category==='lunar'?(e.name.indexOf('🌑')>=0?'🌑':e.name.indexOf('🌓')>=0?'🌓':e.name.indexOf('🌕')>=0?'🌕':e.name.indexOf('🌗')>=0?'🌗':'🌙'):e.category==='solar'?(e.name.indexOf('🌸')>=0?'🌸':e.name.indexOf('☀️')>=0?'☀️':e.name.indexOf('🍂')>=0?'🍂':e.name.indexOf('❄️')>=0?'❄️':'☀️'):cat.label.split(' ')[0];
-      var showTime=(e.category==='lunar'||e.category==='solar'); var dateStr=DNAMES[d.getDay()]+' · '+MONTHS_S[d.getMonth()]+' '+d.getDate()+(e.birthYear?', '+e.birthYear:'')+(showTime&&e.time?' · '+fmtTime(e.time):'');
+      var showTime=(e.category==='lunar'||e.category==='solar'); var dateStr=DNAMES[d.getDay()]+' · '+MONTHS_S[d.getMonth()]+' '+d.getDate()+(showTime&&e.time?' · '+fmtTime(e.time):'')+(e.birthYear?' ― b. '+e.birthYear:''); var birthLine='';
       var cdClass='ev-cd'+(isToday?' today':diff<0?' past':'');
       var cdText=isToday?'🎉 Today':diff>0?diff+' day'+(diff>1?'s':'')+' left':Math.abs(diff)+' day'+(Math.abs(diff)>1?'s':'')+' ago';
       var rightHtml='';
