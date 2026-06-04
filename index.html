@@ -1022,7 +1022,7 @@ function onSignedIn() {
   updateAuthUI(true);
   buildCatStrip();
   render();
-  setTimeout(function(){ loadFromFirestore(); },500);
+  setTimeout(function(){ loadFromFirestore(); startRealtime(); },500);
 }
 
 function updateAuthUI(signedIn) {
@@ -1527,6 +1527,86 @@ function renderCalView() {
 }
 
 function calMove(dir){_calDate.setMonth(_calDate.getMonth()+dir);renderCalView();}
+
+
+var _unsubscribe = null;
+var _lastUpdatedAt = 0;
+
+function startRealtime() {
+  if (!_token || !_user) return;
+  stopRealtime();
+  var uid = btoa(_user.email).replace(/=/g,'');
+  // Load Firebase SDK dynamically after render — exact SpeakDeck pattern
+  if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length) {
+    subscribeSnapshot(uid); return;
+  }
+  var loaded = 0;
+  var sdks = ['firebase-app-compat', 'firebase-firestore-compat'];
+  sdks.forEach(function(name) {
+    var s = document.createElement('script');
+    s.src = 'https://www.gstatic.com/firebasejs/10.12.0/' + name + '.js';
+    s.onload = function() {
+      loaded++;
+      if (loaded === 2) {
+        try {
+          if (!firebase.apps.length) {
+            firebase.initializeApp({
+              apiKey: FB_API_KEY,
+              projectId: FB_PROJECT,
+              authDomain: FB_PROJECT + '.firebaseapp.com',
+              appId: '1:55277159527:web:90abfdf1c812a7707680c2'
+            });
+          }
+          subscribeSnapshot(uid);
+        } catch(e) { startPolling(uid); }
+      }
+    };
+    s.onerror = function() { startPolling(uid); };
+    document.body.appendChild(s);
+  });
+}
+
+function subscribeSnapshot(uid) {
+  try {
+    var db = firebase.firestore();
+    var unsubFn = db.collection('chronos').doc('users_' + uid).onSnapshot(function(doc) {
+      if (!doc.exists) return;
+      var data = doc.data();
+      if (!data || !data.events) return;
+      var cloudTime = data.updatedAt || 0;
+      if (cloudTime <= _lastUpdatedAt) return; // our own save, ignore
+      _lastUpdatedAt = cloudTime;
+      var seeds = events.filter(function(e){ return e.category==='lunar'||e.category==='solar'; });
+      var personal = Array.isArray(data.events) ? data.events : [];
+      var allIds = {};
+      personal.forEach(function(e){ allIds[e.id]=true; });
+      var newSeeds = seeds.filter(function(e){ return !allIds[e.id]; });
+      events = personal.concat(newSeeds);
+      try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(ex){}
+      render();
+      showToast('\u2713 Updated!');
+    }, function(err) {
+      console.error('onSnapshot error', err);
+      startPolling(uid);
+    });
+    _unsubscribe = unsubFn;
+  } catch(e) { startPolling(uid); }
+}
+
+function startPolling(uid) {
+  _unsubscribe = setInterval(function() {
+    if (!_token || !_user) { stopRealtime(); return; }
+    loadFromFirestore();
+  }, 15000);
+}
+
+function stopRealtime() {
+  if (_unsubscribe) {
+    if (typeof _unsubscribe === 'function') _unsubscribe();
+    else clearInterval(_unsubscribe);
+    _unsubscribe = null;
+  }
+}
 
 // ── INIT ─────────────────────────────────────────────
 migrateStorage();
