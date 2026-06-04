@@ -1062,32 +1062,30 @@ function fsRead(docPath, cb) {
 function isAdmin() { return _user && _user.email === ADMIN_EMAIL; }
 
 function loadFromFirestore() {
-  // Load public admin events (visible to all users)
-  fsRead('chronos/adminEvents', function(adminEvts) {
-    var personal = events.filter(function(e) { return !e.isAdmin; });
-    if (adminEvts && adminEvts.length) {
-      var adminMarked = adminEvts.map(function(e) { e.isAdmin = true; e.isPublic = true; return e; });
-      events = personal.concat(adminMarked);
-    } else {
-      events = personal;
-    }
-    try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
-    render();
-  });
-  // Load user's own private events
-  if (_user) {
-    var uid = btoa(_user.email).replace(/=/g,'');
-    fsRead('chronos/users_' + uid, function(userEvts) {
-      var pub = events.filter(function(e) { return e.isAdmin && e.isPublic; });
-      if (userEvts && userEvts.length) {
-        events = pub.concat(userEvts);
-      } else {
-        events = pub;
+  if (!_token || !_user) return;
+  var uid = btoa(_user.email).replace(/=/g,'');
+  // Load personal events first, then admin events
+  fsRead('chronos/users_' + uid, function(userEvts) {
+    fsRead('chronos/adminEvents', function(adminEvts) {
+      // Keep lunar/solar seeds from localStorage
+      var seeds = events.filter(function(e){ return e.category==='lunar'||e.category==='solar'; });
+      var personal = [];
+      if (userEvts && userEvts.length) personal = userEvts;
+      var admin = [];
+      if (adminEvts && adminEvts.length) {
+        admin = adminEvts.map(function(e){ e.isAdmin=true; e.isPublic=true; return e; });
       }
-      try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(e){}
+      // Merge: personal + admin + any seeds not already included
+      var allIds = {};
+      personal.forEach(function(e){ allIds[e.id]=true; });
+      admin.forEach(function(e){ allIds[e.id]=true; });
+      var newSeeds = seeds.filter(function(e){ return !allIds[e.id]; });
+      events = personal.concat(admin).concat(newSeeds);
+      try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(ex){}
+      showToast('\u2713 Loaded!');
       render();
     });
-  }
+  });
 }
 
 function syncNow() {
