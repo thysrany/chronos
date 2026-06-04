@@ -170,7 +170,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 <body class="theme-light">
 
 <!-- SPLASH -->
-<div id="splash">
+<div id="splash" class="hidden" style="display:none">
   <div class="sp-name">🌙 ChronosCalendar</div>
   <div class="sp-sub">.app</div>
   <div class="sp-line"></div>
@@ -1015,14 +1015,15 @@ function fetchUserInfo() {
 }
 
 function onSignedIn() {
-  // Hide sign-in, show splash quote first, then user taps Enter to see app
   document.getElementById('signinScreen').classList.add('hidden');
+  // Show quote splash first
   var splash = document.getElementById('splash');
-  if (splash) {
-    initSplash();
-    splash.style.display = '';
-    splash.classList.remove('hidden');
-  }
+  initSplash();
+  splash.style.display = '';
+  splash.style.opacity = '0';
+  splash.classList.remove('hidden');
+  setTimeout(function(){ splash.style.opacity = '1'; }, 10);
+  // Load data in background
   updateAuthUI(true);
   buildCatStrip();
   render();
@@ -1647,7 +1648,6 @@ migrateStorage();
 loadTheme();
 loadEvents();
 seedLunar();
-initSplash();
 
 
 // Wire month sheet buttons after full DOM load
