@@ -546,7 +546,7 @@ var SOLAR_DATA = [
 ];
 
 function seedLunar() {
-  if (localStorage.getItem('ch4d_seeded2')) return;
+  if (localStorage.getItem('ch4d_seeded3')) return;
   // MERGE lunar/solar into existing events — never replace
   var existingIds = {};
   events.forEach(function(e){ existingIds[e.id]=true; });
@@ -559,7 +559,7 @@ function seedLunar() {
   });
   events = events.concat(toAdd);
   saveEventsLocal();
-  localStorage.setItem('ch4d_seeded2','1');
+  localStorage.setItem('ch4d_seeded3','1');
 }
 
 // ── THEME ─────────────────────────────────────────────
@@ -837,7 +837,7 @@ function render() {
       var isToday=d.getTime()===now.getTime();
       var diff=Math.round((d-now)/86400000);
       var icon=e.category==='lunar'?(e.name.indexOf('🌑')>=0?'🌑':e.name.indexOf('🌓')>=0?'🌓':e.name.indexOf('🌕')>=0?'🌕':e.name.indexOf('🌗')>=0?'🌗':'🌙'):e.category==='solar'?(e.name.indexOf('🌸')>=0?'🌸':e.name.indexOf('☀️')>=0?'☀️':e.name.indexOf('🍂')>=0?'🍂':e.name.indexOf('❄️')>=0?'❄️':'☀️'):cat.label.split(' ')[0];
-      var dateStr=MONTHS_S[d.getMonth()]+' '+d.getDate()+(e.birthYear?', '+e.birthYear:'')+(e.time?' · '+fmtTime(e.time):'');
+      var showTime=(e.category==='lunar'||e.category==='solar'); var dateStr=DNAMES[d.getDay()]+' · '+MONTHS_S[d.getMonth()]+' '+d.getDate()+(e.birthYear?', '+e.birthYear:'')+(showTime&&e.time?' · '+fmtTime(e.time):'');
       var cdClass='ev-cd'+(isToday?' today':diff<0?' past':'');
       var cdText=isToday?'🎉 Today':diff>0?diff+' day'+(diff>1?'s':'')+' left':Math.abs(diff)+' day'+(Math.abs(diff)>1?'s':'')+' ago';
       var rightHtml='';
