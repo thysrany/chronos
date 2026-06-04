@@ -631,9 +631,9 @@ function enterApp() {
   s.classList.add('hidden');
   setTimeout(function() {
     s.style.display='none';
-    document.getElementById('app').classList.add('show');
-    buildCatStrip();
-    render();
+    if (!_user) {
+      document.getElementById('signinScreen').classList.remove('hidden');
+    }
   }, 700);
 }
 
@@ -875,12 +875,12 @@ function pickCat(id){
     if(byrRow) byrRow.className='show';
     if(byrLabel) byrLabel.textContent='Birth year (to show age e.g. turns 32)';
     if(brelRow) brelRow.style.display='';
-    selRecur='yearly'; setTimeout(function(){ setRecur('yearly'); }, 10);
+    selRecur='yearly'; setRecur('yearly');
   } else if(id==='anniversary'){
     if(byrRow) byrRow.className='show';
     if(byrLabel) byrLabel.textContent='Year it started (to show # of years)';
     if(brelRow) brelRow.style.display='none';
-    selRecur='yearly'; setTimeout(function(){ setRecur('yearly'); }, 10);
+    selRecur='yearly'; setRecur('yearly');
   } else {
     if(byrRow) byrRow.className='';
     if(brelRow) brelRow.style.display='none';
@@ -907,7 +907,7 @@ function setRecur(r){
 function openModal(){
   selCat='lunar-solar';selRecur='once';
   ['mName','mDate','mTime','mNotes','mBYear'].forEach(function(id){document.getElementById(id).value='';});
-  buildCatGrid();setRecur('once');
+  setRecur('once');buildCatGrid();
   document.getElementById('byr-row').className='';
   var brelRowM=document.getElementById('brel-row'); if(brelRowM) brelRowM.style.display='none';
   selBRel='friend'; setBRel('friend');
@@ -1011,15 +1011,14 @@ function fetchUserInfo() {
 }
 
 function onSignedIn() {
-  var splash=document.getElementById('splash');
-  if(splash){splash.classList.add('hidden');splash.style.display='none';}
+  // Don't hide splash — let user see the quote and tap Enter
   document.getElementById('signinScreen').classList.add('hidden');
   document.getElementById('app').style.display='';
   document.getElementById('app').classList.add('show');
   var fab=document.getElementById('fab'); if(fab) fab.style.display='flex';
   updateAuthUI(true);
   buildCatStrip();
-  render();  // show localStorage events immediately
+  render();
   setTimeout(function(){ loadFromFirestore(); startRealtime(); }, 500);
 }
 
