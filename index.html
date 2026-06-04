@@ -214,8 +214,8 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
       </div>
     </div>
     <div class="filter-bar" id="timeBar">
-      <button class="ftab on" data-t="upcoming" onclick="setTime('upcoming')">Upcoming</button>
-      <button class="ftab" data-t="all" onclick="setTime('all')">All</button>
+      <button class="ftab" data-t="upcoming" onclick="setTime('upcoming')">Upcoming</button>
+      <button class="ftab on" data-t="all" onclick="setTime('all')">All</button>
       <button class="ftab" data-t="past" onclick="setTime('past')">Past</button>
       <div style="flex:1"></div>
       <button class="ftab" id="calTab" onclick="showCalView()">📅</button>
@@ -372,7 +372,7 @@ var DNAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 var MONTHS_S = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 var events = [];
-var timeFilter = 'upcoming';
+var timeFilter = 'all';
 var catFilter  = 'all';
 var selCat     = 'lunar';
 var selRecur   = 'once';
@@ -819,11 +819,7 @@ function stripEmoji(name) {
 function fmtTime(t){if(!t)return'';var p=t.split(':'),h=parseInt(p[0]);return(h%12||12)+':'+p[1]+' '+(h>=12?'PM':'AM');}
 
 function render() {
-  var cv=document.getElementById('calView');
-  var ct=document.getElementById('calTab');
-  if(cv&&cv.style.display!=='none'){cv.style.display='none';if(ct)ct.classList.remove('on');}
   var list=document.getElementById('eventList');
-  if(list) list.style.display='';
   var now=today0(), items=getFiltered();
   if(!items.length){list.innerHTML='<div class="empty"><div class="empty-icon">🌙</div>No events found.</div>';return;}
   var months={},monthOrder=[];
