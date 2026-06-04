@@ -5,7 +5,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v32 -->
+<!-- v34 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ChronosCalendar.app</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%230f0c29'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='35%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23cbd5e1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='200' cy='200' r='200' fill='url(%23a)'/%3E%3Ccircle cx='200' cy='200' r='185' fill='none' stroke='%23f59e0b' stroke-width='6' opacity='0.6'/%3E%3Ccircle cx='200' cy='185' r='100' fill='url(%23b)'/%3E%3Ccircle cx='245' cy='168' r='88' fill='url(%23a)'/%3E%3Ccircle cx='148' cy='103' r='8' fill='%23fde68a'/%3E%3Ccircle cx='310' cy='130' r='9' fill='%23fde68a' opacity='0.9'/%3E%3C/svg%3E">
@@ -352,13 +352,14 @@ var QUOTES = [
 ];
 
 var CATS = [
-  { id:'lunar-solar',  label:'🌙 Moon & Sun',   color:'#7c6faf' },
-  { id:'birthday',     label:'🎂 Birthday',     color:'#e07b8a' },
-  { id:'anniversary',  label:'🥂 Anniversary',  color:'#c084fc' },
-  { id:'holiday',      label:'🎉 Holiday',      color:'#e8a838' },
-  { id:'work',         label:'💼 Work',         color:'#4a9eda' },
-  { id:'personal',     label:'🌿 Personal',     color:'#5caa72' },
-  { id:'other',        label:'✦ Other',         color:'#aaaaaa' }
+  { id:'lunar-solar',      label:'🌙 Moon & Sun',        color:'#7c6faf' },
+  { id:'birthday-family',  label:'🎂 Family',   color:'#e07b8a' },
+  { id:'birthday-friends', label:'🎂 Friends',  color:'#f9a8d4' },
+  { id:'anniversary',      label:'🥂 Anniversary',       color:'#c084fc' },
+  { id:'holiday',          label:'🎉 Holiday',           color:'#e8a838' },
+  { id:'work',             label:'💼 Work',              color:'#4a9eda' },
+  { id:'personal',         label:'🌿 Personal',          color:'#5caa72' },
+  { id:'other',            label:'✦ Other',              color:'#aaaaaa' }
 ];
 
 var THEMES = [
@@ -703,7 +704,8 @@ function getFiltered() {
     if(!e.date) continue;
     var catMatch = catFilter==='all'
       || e.category===catFilter
-      || (catFilter==='lunar-solar' && (e.category==='lunar'||e.category==='solar'));
+      || (catFilter==='lunar-solar' && (e.category==='lunar'||e.category==='solar'))
+      || (catFilter==='birthday' && (e.category==='birthday-family'||e.category==='birthday-friends'||e.category==='birthday'));
     if(!catMatch) continue;
     if(e.recur==='once'){
       var d=resolveDate(e);
@@ -878,10 +880,10 @@ function pickCat(id){
   var byrRow=document.getElementById('byr-row');
   var byrLabel=document.getElementById('byr-label');
   var brelRow=document.getElementById('brel-row');
-  if(id==='birthday'){
+  if(id==='birthday-family'||id==='birthday-friends'||id==='birthday'){
     if(byrRow) byrRow.className='show';
     if(byrLabel) byrLabel.textContent='Birth year (to show age e.g. turns 32)';
-    if(brelRow) brelRow.style.display='';
+    if(brelRow) brelRow.style.display='none';
     selRecur='yearly'; setRecur('yearly');
   } else if(id==='anniversary'){
     if(byrRow) byrRow.className='show';
@@ -1358,9 +1360,9 @@ function openEdit(id) {
   var brelRow=document.getElementById('brel-row');
   var byrRow=document.getElementById('byr-row');
   var byrLabel=document.getElementById('byr-label');
-  if(selCat==='birthday'){
+  if(selCat==='birthday-family'||selCat==='birthday-friends'||selCat==='birthday'){
     if(byrRow) byrRow.className='show'; if(byrLabel) byrLabel.textContent='Birth year (to show age)';
-    if(brelRow) brelRow.style.display='';
+    if(brelRow) brelRow.style.display='none';
   } else if(selCat==='anniversary'){
     if(byrRow) byrRow.className='show'; if(byrLabel) byrLabel.textContent='Year it started';
     if(brelRow) brelRow.style.display='none';
