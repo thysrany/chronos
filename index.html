@@ -1452,17 +1452,7 @@ loadTheme();
 loadEvents();
 seedLunar();
 initSplash();
-// DEBUG: show what's in localStorage
-setTimeout(function(){
-  var keys = ['ch4d_events','ch4d_seeded','ch4d_seeded2','ch_user'];
-  var info = keys.map(function(k){
-    var v = localStorage.getItem(k);
-    return k + ': ' + (v ? (v.length > 50 ? v.substr(0,50)+'...' : v) : 'null');
-  }).join('\n');
-  var evts = [];
-  try { evts = JSON.parse(localStorage.getItem('ch4d_events')||'[]'); } catch(e){}
-  alert('Events in localStorage: ' + evts.length + '\n\n' + info);
-}, 2000);
+
 
 // Wire month sheet buttons after full DOM load
 window.addEventListener('load', function() {
