@@ -5,7 +5,6 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v20 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ChronosCalendar.app</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%230f0c29'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='35%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23cbd5e1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='200' cy='200' r='200' fill='url(%23a)'/%3E%3Ccircle cx='200' cy='200' r='185' fill='none' stroke='%23f59e0b' stroke-width='6' opacity='0.6'/%3E%3Ccircle cx='200' cy='185' r='100' fill='url(%23b)'/%3E%3Ccircle cx='245' cy='168' r='88' fill='url(%23a)'/%3E%3Ccircle cx='148' cy='103' r='8' fill='%23fde68a'/%3E%3Ccircle cx='310' cy='130' r='9' fill='%23fde68a' opacity='0.9'/%3E%3C/svg%3E">
@@ -86,8 +85,8 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 .ev-cd   { font-size:11px; font-weight:600; color:var(--green); }
 .ev-cd.past  { color:var(--dim); }
 .ev-cd.today { color:var(--gold); }
-.ev-right { flex-shrink:0; text-align:center; min-width:58px; }
-.ev-turns { font-size:10px; color:var(--gold); text-transform:uppercase; letter-spacing:.05em; font-weight:700; text-align:center; }
+.ev-right { flex-shrink:0; text-align:right; min-width:52px; }
+.ev-turns { font-size:9px; color:var(--muted); text-transform:uppercase; }
 .ev-age  { font-size:26px; font-weight:700; color:var(--text); line-height:1; }
 .ev-dnum { font-size:24px; font-weight:700; line-height:1; color:var(--text); }
 .ev-dlbl { font-size:9px; color:var(--dim); text-transform:uppercase; }
@@ -145,28 +144,27 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 .btn-cancel-m { padding:9px 18px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--muted); font-family:'Open Sans',sans-serif; font-size:14px; cursor:pointer; }
 
 
-/* ── CALENDAR VIEW ── */
 .cal-nav { display:flex; align-items:center; justify-content:space-between; padding:10px 1rem; background:var(--bg2); border-bottom:1px solid var(--border); }
-.cal-nav-btn { background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:18px; padding:4px 14px; cursor:pointer; touch-action:manipulation; }
+.cal-nav-btn { background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--gold); font-size:18px; padding:2px 12px; cursor:pointer; touch-action:manipulation; }
 .cal-month-title { font-size:15px; font-weight:700; color:var(--text); }
 .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); padding:0 4px; }
-.cal-dow { text-align:center; font-size:9px; font-weight:700; color:var(--muted); padding:8px 0 4px; text-transform:uppercase; letter-spacing:.05em; }
-.cal-day { min-height:60px; padding:3px 2px; display:flex; flex-direction:column; align-items:center; border-top:1px solid var(--border); cursor:pointer; }
-.cal-day.other-month { opacity:0.3; }
-.cal-day.today-day .cal-num { background:var(--gold); color:#0d1117; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; }
-.cal-num { font-size:12px; font-weight:600; color:var(--text); line-height:22px; width:22px; text-align:center; }
-.cal-moon { font-size:16px; line-height:1; margin-top:2px; }
-.cal-dot { width:5px; height:5px; border-radius:50%; margin-top:2px; }
-.cal-months { }
-.cal-month-block { margin-bottom:4px; }
-.cal-month-hdr { padding:8px 1rem 4px; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); }
+.cal-dow { text-align:center; font-size:9px; font-weight:700; color:var(--muted); padding:8px 0 4px; text-transform:uppercase; }
+.cal-day { min-height:56px; padding:2px; display:flex; flex-direction:column; align-items:center; border-top:1px solid var(--border); }
+.cal-day.other-month { opacity:0.25; }
+.cal-day.today-day .cal-num { background:var(--gold); color:#0d1117; border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-weight:700; }
+.cal-num { font-size:11px; font-weight:500; color:var(--text); line-height:20px; width:20px; text-align:center; }
+.cal-moon { font-size:13px; line-height:1; margin-top:1px; }
+.cal-mlabel { font-size:7px; color:var(--gold); text-align:center; font-weight:700; margin-top:1px; line-height:1; }
+.phase-section { padding:1rem; }
+.phase-hdr { font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+.phase-item { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--border); }
 
 /* toast uses inline styles */
 /* ── MONTH ACTION ── */
 .maction-btn { background:transparent; border:none; color:var(--gold); font-size:18px; cursor:pointer; padding:2px 8px; line-height:1; touch-action:manipulation; }
 .month-copy-btn { background:transparent; border:1px solid rgba(201,168,76,0.3); border-radius:6px; color:var(--gold); font-size:10px; padding:6px 12px; cursor:pointer; font-family:'Open Sans',sans-serif; touch-action:manipulation; -webkit-tap-highlight-color:rgba(201,168,76,0.3); }
 .month-copy-btn:hover { opacity:1; background:rgba(201,168,76,0.1); }
-.mcopy-btn { padding:5px 12px; border-radius:6px; border:1px solid var(--gold); background:rgba(201,168,76,0.1); color:var(--gold); font-size:13px; cursor:pointer; touch-action:manipulation; white-space:nowrap; font-weight:600; }
+.mcopy-btn { padding:3px 10px; border-radius:6px; border:1px solid var(--gold); background:transparent; color:var(--gold); font-size:12px; cursor:pointer; touch-action:manipulation; white-space:nowrap; font-weight:600; }
 </style>
 </head>
 <body class="theme-light">
@@ -227,7 +225,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 
   <div class="cat-strip" id="catStrip"></div>
   <div class="event-list" id="eventList"></div>
-<div id="calView" style="display:none;padding:0 0 80px 0;overflow-y:auto;-webkit-overflow-scrolling:touch;"></div>
+<div id="calView" style="display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:80px;"></div>
 
   <div class="bottom-nav">
     <button class="bnav-btn on"><span class="bnav-icon">📅</span>Events</button>
@@ -258,14 +256,13 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
         <div><label class="flabel">Time (optional)</label><input class="finput" id="mTime" type="time" /></div>
       </div>
       <div id="byr-row">
-        <label class="flabel" id="byr-label">Birth year (to show age / years)</label>
-        <input class="finput" id="mBYear" type="number" placeholder="e.g. 1990" min="1900" max="2026" />
+        <label class="flabel">Birth Year (optional — shows age)</label>
+        <input class="finput" id="mBYear" type="number" placeholder="e.g. 1990" min="1900" max="2024" />
         <div style="margin-top:8px">
           <label class="flabel">Relationship</label>
           <div class="togrow">
-            <button class="togbtn on" id="bRelFriend" onclick="setBRel('friend')">👫 Friends</button>
+            <button class="togbtn on" id="bRelFriend" onclick="setBRel('friend')">👫 Friend</button>
             <button class="togbtn" id="bRelFamily" onclick="setBRel('family')">👨‍👩‍👧 Family</button>
-            <button class="togbtn" id="bRelEvent" onclick="setBRel('event')">🎉 Event</button>
           </div>
         </div>
       </div>
@@ -349,13 +346,11 @@ var QUOTES = [
 ];
 
 var CATS = [
-  { id:'lunar-solar',  label:'🌙 Moon & Sun',   color:'#7c6faf' },
-  { id:'birthday',     label:'🎂 Birthday',     color:'#e07b8a' },
-  { id:'anniversary',  label:'🥂 Anniversary',  color:'#c084fc' },
-  { id:'holiday',      label:'🎉 Holiday',      color:'#e8a838' },
-  { id:'work',         label:'💼 Work',         color:'#4a9eda' },
-  { id:'personal',     label:'🌿 Personal',     color:'#5caa72' },
-  { id:'other',        label:'✦ Other',         color:'#aaaaaa' }
+  { id:'lunar-solar',     label:'🌙☀️ Moon & Sun',  color:'#93c5fd' },
+  { id:'birthday',        label:'🎂 Birthday',      color:'#f472b6' },
+  { id:'events',          label:'🎊 Events',        color:'#a78bfa' },
+  { id:'life',            label:'💼 Life',           color:'#34d399' },
+  { id:'other',           label:'📌 Other',         color:'#94a3b8' },
 ];
 
 var THEMES = [
@@ -542,14 +537,10 @@ var SOLAR_DATA = [
   {id:'sol06',name:'☀️ Summer Solstice', date:'2026-06-21',time:'08:24',notes:'Longest day of the year'},
   {id:'sol07',name:'🍂 Autumn Equinox',  date:'2026-09-23',time:'00:05',notes:'Day and night equal length'},
   {id:'sol08',name:'❄️ Winter Solstice', date:'2026-12-21',time:'20:50',notes:'Shortest day of the year'},
-  {id:'sol09',name:'🌸 Spring Equinox',  date:'2027-03-20',time:'20:24',notes:'Day and night equal length'},
-  {id:'sol10',name:'☀️ Summer Solstice', date:'2027-06-21',time:'14:11',notes:'Longest day of the year'},
-  {id:'sol11',name:'🍂 Autumn Equinox',  date:'2027-09-23',time:'06:02',notes:'Day and night equal length'},
-  {id:'sol12',name:'❄️ Winter Solstice', date:'2027-12-22',time:'02:43',notes:'Shortest day of the year'},
 ];
 
 function seedLunar() {
-  if (localStorage.getItem('ch4d_seeded2')) return;
+  if (localStorage.getItem('ch4e_seeded')) return;
   events = LUNAR_DATA.map(function(e) {
     return {id:e.id,name:e.name,date:e.date,time:e.time,category:'lunar',recur:'once',notes:e.notes,birthYear:null};
   });
@@ -558,7 +549,7 @@ function seedLunar() {
   });
   events = events.concat(solarEvents);
   saveEventsLocal();
-  localStorage.setItem('ch4d_seeded2','1');
+  localStorage.setItem('ch4e_seeded','1');
 }
 
 // ── THEME ─────────────────────────────────────────────
@@ -667,16 +658,13 @@ function buildCatStrip() {
 }
 
 function setTime(t) {
+  var cv=document.getElementById('calView'),el=document.getElementById('eventList'),ct=document.getElementById('calTab');
+  if(cv&&cv.style.display!=='none'){cv.style.display='none';if(el)el.style.display='';if(ct)ct.classList.remove('on');}
   timeFilter=t;
-  // Close calendar view if open
-  var cv=document.getElementById('calView'); var el=document.getElementById('eventList');
-  if(cv&&cv.style.display!=='none'){ cv.style.display='none'; if(el) el.style.display=''; var ct=document.getElementById('calTab'); if(ct) ct.classList.remove('on'); }
   document.querySelectorAll('#timeBar .ftab').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===t);});
   render();
 }
 function setCat(c) {
-  var cv=document.getElementById('calView'); var el=document.getElementById('eventList');
-  if(cv&&cv.style.display!=='none'){ cv.style.display='none'; if(el) el.style.display=''; var ct=document.getElementById('calTab'); if(ct) ct.classList.remove('on'); }
   catFilter=c;
   document.querySelectorAll('#catStrip .cstab').forEach(function(b){
     var isOn=b.getAttribute('data-c')===c, cat=getCat(b.getAttribute('data-c'));
@@ -784,7 +772,7 @@ function copyMonth(year, month, btn) {
     var name = stripEmoji(e.name);
     var time = e.time ? ' - ' + fmtTime(e.time) : '';
     var note = e.notes ? ' (' + e.notes + ')' : '';
-    var yrs=e.birthYear?(d.getFullYear()-parseInt(e.birthYear)):0; var age=e.birthYear?(e.category==='anniversary'?' \u2014 '+yrs+(yrs===1?' year':' years'):' \u2014 turns '+yrs):'';
+    var age  = e.birthYear ? ' - turns ' + (year - parseInt(e.birthYear)) : '';
     lines.push('  ' + name + time + age + note);
   }
   var txt = lines.join('\n');
@@ -822,7 +810,6 @@ function fmtTime(t){if(!t)return'';var p=t.split(':'),h=parseInt(p[0]);return(h%
 
 function render() {
   var list=document.getElementById('eventList');
-  if(list) list.style.display=''; // ensure visible
   var now=today0(), items=getFiltered();
   if(!items.length){list.innerHTML='<div class="empty"><div class="empty-icon">🌙</div>No events found.</div>';return;}
   var months={},monthOrder=[];
@@ -834,7 +821,7 @@ function render() {
   var html='';
   for(var mi=0;mi<monthOrder.length;mi++){
     var mg=months[monthOrder[mi]];
-        html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class="mcopy-btn" onclick="copyMonth('+mg.y+','+mg.m+',this)">⧉</button></div>';
+    html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class=\"mcopy-btn\" onclick=\"copyMonth(\'+mg.y+\',\'+mg.m+\',this)\">⧉</button></div>';
     for(var ii=0;ii<mg.items.length;ii++){
       var item=mg.items[ii],e=item.ev,d=item.date,cat=getCat(e.category);
       var isToday=d.getTime()===now.getTime();
@@ -844,16 +831,12 @@ function render() {
       var cdClass='ev-cd'+(isToday?' today':diff<0?' past':'');
       var cdText=isToday?'🎉 Today':diff>0?diff+' day'+(diff>1?'s':'')+' left':Math.abs(diff)+' day'+(Math.abs(diff)>1?'s':'')+' ago';
       var rightHtml='';
-      if(e.birthYear){
-        var yrs2=mg.y-parseInt(e.birthYear);
-        var lbl2=e.category==='anniversary'?'years':'turns';
-        rightHtml='<div class="ev-right"><div class="ev-turns">'+lbl2+'</div><div class="ev-age">'+yrs2+'</div></div>';
-      }
+      if(e.birthYear){var age=mg.y-parseInt(e.birthYear);var lbl2=e.category==='anniversary'?'years':'turns';rightHtml='<div class="ev-right"><div class="ev-turns">'+lbl2+'</div><div class="ev-age">'+age+'</div></div>';}
       else if(isToday){rightHtml='<div class="ev-right"><div style="font-size:26px">🎉</div></div>';}
       else{var col=diff>=0?'var(--text)':'var(--dim)';rightHtml='<div class="ev-right"><div class="ev-dnum" style="color:'+col+'">'+Math.abs(diff)+'</div><div class="ev-dlbl">'+(diff>=0?'days left':'days ago')+'</div></div>';}
       html+='<div class="event-item'+(isToday?' today-item':'')+'" onclick="openEdit(\''+e.id+'\')">' +
         '<div class="ev-avatar" style="background:var(--bg3)">'+icon+'</div>' +
-        '<div class="ev-info"><div class="ev-name">'+stripEmoji(e.name)+'</div>'+(e.bRel?'<div class="ev-rel">'+(e.bRel==='family'?'👨‍👩‍👧 Family':e.bRel==='event'?'🎉 Event':'👫 Friends')+'</div>':'')+'<div class="ev-date">'+dateStr+'</div>'+(e.notes?'<div class="ev-sub">'+e.notes+'</div>':'')+'<div class="'+cdClass+'">'+cdText+'</div></div>' +
+        '<div class="ev-info"><div class="ev-name">'+stripEmoji(e.name)+'</div>'+(e.bRel?'<div class="ev-rel">'+(e.bRel==='family'?'👨‍👩‍👧 Family':'👫 Friend')+'</div>':'')+'<div class="ev-date">'+dateStr+'</div>'+(e.notes?'<div class="ev-sub">'+e.notes+'</div>':'')+'<div class="'+cdClass+'">'+cdText+'</div></div>' +
         rightHtml+'</div>';
     }
   }
@@ -873,19 +856,7 @@ function pickCat(id){
   document.querySelectorAll('.catbtn').forEach(function(b){b.classList.remove('on');b.style.borderColor='';b.style.color='';});
   var btn=document.getElementById('cb-'+id);
   if(btn){var c=getCat(id);btn.classList.add('on');btn.style.borderColor=c.color;btn.style.color=c.color;}
-  // Set default recurrence for category
-  if(id==='anniversary'||id==='birthday'){ setRecur('yearly'); selRecur='yearly'; }
-  var byrRow = document.getElementById('byr-row');
-  var byrLabel = document.getElementById('byr-label');
-  if (id==='birthday') {
-    byrRow.className='show';
-    if(byrLabel) byrLabel.textContent='Birth year (to show age e.g. turns 32)';
-  } else if (id==='anniversary') {
-    byrRow.className='show';
-    if(byrLabel) byrLabel.textContent='Year it started (to show # of years e.g. 5 years)';
-  } else {
-    byrRow.className='';
-  }
+  document.getElementById('byr-row').className=(id==='birthday')?'show':'';
   document.getElementById('lunarHint').className='lunar-hint'+(id==='lunar-solar'?' show':'');
 }
 function setVisibility(v) {
@@ -897,9 +868,9 @@ function setVisibility(v) {
 }
 function setBRel(r){
   selBRel=r;
-  ['bRelFriend','bRelFamily','bRelEvent'].forEach(function(id,i){
+  ['bRelFriend','bRelFamily'].forEach(function(id,i){
     var el=document.getElementById(id);
-    if(el) el.classList.toggle('on',['friend','family','event'][i]===r);
+    if(el) el.classList.toggle('on',['friend','family'][i]===r);
   });
 }
 function setRecur(r){
@@ -931,7 +902,7 @@ function saveEvent(){
     category:selCat, recur:selRecur,
     notes:document.getElementById('mNotes').value.trim(),
     birthYear:document.getElementById('mBYear').value||null,
-    bRel:(selCat==='anniversary'||selCat==='birthday')?selBRel:null,
+    bRel:selCat==='birthday'?selBRel:null,
     isAdmin: isAdmin(),
     isPublic: isAdmin() ? (selVisibility==='public') : false
   };
@@ -1142,7 +1113,7 @@ function saveEvent() {
     category:selCat, recur:selRecur,
     notes:document.getElementById('mNotes').value.trim(),
     birthYear:document.getElementById('mBYear').value||null,
-    bRel:(selCat==='anniversary'||selCat==='birthday')?selBRel:null,
+    bRel:selCat==='birthday'?selBRel:null,
     isAdmin: isAdmin()
   };
   if (_editingId) { events = events.filter(function(x){ return x.id !== _editingId; }); _editingId = null; }
@@ -1218,7 +1189,7 @@ function startEditEvent() {
   document.getElementById('mNotes').value = e.notes || '';
   document.getElementById('mBYear').value = e.birthYear || '';
   buildCatGrid(); setRecur(selRecur); setVisibility(selVisibility); setBRel(selBRel);
-  document.getElementById('byr-row').className = (selCat==='anniversary') ? 'show' : '';
+  document.getElementById('byr-row').className = (selCat==='birthday') ? 'show' : '';
   document.getElementById('lunarHint').className = 'lunar-hint' + (selCat==='lunar-solar' ? ' show' : '');
   var vRow = document.getElementById('visibilityRow');
   if (vRow) vRow.style.display = isAdmin() ? 'block' : 'none';
@@ -1279,7 +1250,7 @@ function buildMonthText(year, month) {
     var name = stripEmoji(e.name);
     var time = e.time ? ' - ' + fmtTime(e.time) : '';
     var note = e.notes ? ' (' + e.notes + ')' : '';
-    var yrs=e.birthYear?(d.getFullYear()-parseInt(e.birthYear)):0; var age=e.birthYear?(e.category==='anniversary'?' \u2014 '+yrs+(yrs===1?' year':' years'):' \u2014 turns '+yrs):'';
+    var age  = e.birthYear ? ' - turns ' + (year - parseInt(e.birthYear)) : '';
     lines.push('  ' + name + time + age + note);
   }
   return lines.join('\n');
@@ -1361,7 +1332,7 @@ function copyMonth(year, month, btn) {
       lines.push(DNAMES[d.getDay()]+' '+MONTHS_S[d.getMonth()]+' '+d.getDate());
       lastDay=d.getDate();
     }
-    lines.push('  '+stripEmoji(e.name)+(e.time?' - '+fmtTime(e.time):'')+(e.birthYear?(e.category==='anniversary'?' - '+(year-parseInt(e.birthYear))+' years':' - turns '+(year-parseInt(e.birthYear))):'')+(e.notes?' ('+e.notes+')':''));
+    lines.push('  '+stripEmoji(e.name)+(e.time?' - '+fmtTime(e.time):'')+(e.birthYear?' - turns '+(year-parseInt(e.birthYear))+' yrs':'')+(e.notes?' ('+e.notes+')':''));
   }
   var txt=lines.join('\n'), orig=btn?btn.textContent:'⧉';
   copyText(txt,
@@ -1383,7 +1354,7 @@ function openEdit(id) {
   document.getElementById('mNotes').value = e.notes||'';
   document.getElementById('mBYear').value = e.birthYear||'';
   buildCatGrid(); setRecur(selRecur); setVisibility(selVisibility); setBRel(selBRel);
-  document.getElementById('byr-row').className=(selCat==='anniversary'||selCat==='birthday')?'show':'';
+  document.getElementById('byr-row').className=(selCat==='birthday'||selCat==='anniversary')?'show':'';
   document.getElementById('lunarHint').className='lunar-hint'+(selCat==='lunar-solar'?' show':'');
   var vRow=document.getElementById('visibilityRow');
   if(vRow) vRow.style.display=isAdmin()?'block':'none';
@@ -1395,133 +1366,71 @@ var _calDate = new Date();
 _calDate.setDate(1);
 
 function showCalView() {
-  // Toggle: if already showing, go back to list
-  var cv = document.getElementById('calView');
-  var el = document.getElementById('eventList');
-  var tab = document.getElementById('calTab');
-  if (cv.style.display !== 'none') {
-    cv.style.display = 'none';
-    el.style.display = '';
-    if (tab) tab.classList.remove('on');
-    return;
+  var cv=document.getElementById('calView');
+  var el=document.getElementById('eventList');
+  var tab=document.getElementById('calTab');
+  if (cv.style.display!=='none') {
+    cv.style.display='none'; el.style.display='';
+    if(tab) tab.classList.remove('on'); return;
   }
-  // Hide list, show cal
-  el.style.display = 'none';
-  cv.style.display = 'block';
-  if (tab) tab.classList.add('on');
+  el.style.display='none'; cv.style.display='block';
+  if(tab) tab.classList.add('on');
   renderCalView();
 }
 
 function renderCalView() {
-  var cv = document.getElementById('calView');
-  if (!cv || cv.style.display === 'none') return;
-  var y = _calDate.getFullYear();
-  var m = _calDate.getMonth();
-  var today = today0();
-
-  // ── Build moon/solar maps for this month ──
-  var moonMap = {};
-  var phaseList = [];
+  var cv=document.getElementById('calView');
+  if(!cv||cv.style.display==='none') return;
+  var y=_calDate.getFullYear(), m=_calDate.getMonth();
+  var today=today0();
+  var moonMap={}, nameMap={}, phaseList=[];
   events.forEach(function(e) {
-    if (e.category !== 'lunar' && e.category !== 'solar') return;
-    var d = new Date(e.date + 'T00:00:00');
-    if (d.getFullYear() !== y || d.getMonth() !== m) return;
-    var icon = e.name.indexOf('🌑') >= 0 ? '🌑' :
-               e.name.indexOf('🌓') >= 0 ? '🌓' :
-               e.name.indexOf('🌕') >= 0 ? '🌕' :
-               e.name.indexOf('🌗') >= 0 ? '🌗' :
-               e.name.indexOf('🌸') >= 0 ? '🌸' :
-               e.name.indexOf('☀️') >= 0 ? '☀️' :
-               e.name.indexOf('🍂') >= 0 ? '🍂' :
-               e.name.indexOf('❄️') >= 0 ? '❄️' : '';
-    if (icon) {
-      moonMap[d.getDate()] = icon;
-      phaseList.push({ day: d.getDate(), icon: icon, name: stripEmoji(e.name), notes: e.notes || '' });
-    }
+    if(e.category!=='lunar'&&e.category!=='solar') return;
+    var d=new Date(e.date+'T00:00:00');
+    if(d.getFullYear()!==y||d.getMonth()!==m) return;
+    var icon=e.name.indexOf('🌑')>=0?'🌑':e.name.indexOf('🌓')>=0?'🌓':e.name.indexOf('🌕')>=0?'🌕':e.name.indexOf('🌗')>=0?'🌗':e.name.indexOf('🌸')>=0?'🌸':e.name.indexOf('☀️')>=0?'☀️':e.name.indexOf('🍂')>=0?'🍂':e.name.indexOf('❄️')>=0?'❄️':'';
+    if(icon){ var cn=stripEmoji(e.name); moonMap[d.getDate()]=icon; nameMap[d.getDate()]=cn; phaseList.push({day:d.getDate(),icon:icon,name:cn,notes:e.notes||''}); }
   });
-  phaseList.sort(function(a,b){ return a.day - b.day; });
-
-  // ── Event dots map ──
-  var evMap = {};
-  events.forEach(function(e) {
-    if (e.category === 'lunar' || e.category === 'solar') return;
-    var d = new Date(e.date + 'T00:00:00');
-    if (d.getFullYear() !== y || d.getMonth() !== m) return;
-    var cat = getCat(e.category);
-    if (!evMap[d.getDate()]) evMap[d.getDate()] = [];
+  phaseList.sort(function(a,b){return a.day-b.day;});
+  var evMap={};
+  events.forEach(function(e){
+    if(e.category==='lunar'||e.category==='solar') return;
+    var d=new Date(e.date+'T00:00:00');
+    if(d.getFullYear()!==y||d.getMonth()!==m) return;
+    var cat=getCat(e.category);
+    if(!evMap[d.getDate()]) evMap[d.getDate()]=[];
     evMap[d.getDate()].push(cat.color);
   });
-
-  // ── Header ──
-  var html = '<div class="cal-nav">' +
-    '<button class="cal-nav-btn" onclick="calMove(-1)">‹</button>' +
-    '<div class="cal-month-title">' + MONTHS[m] + ' ' + y + '</div>' +
-    '<button class="cal-nav-btn" onclick="calMove(1)">›</button>' +
-    '</div>';
-
-  // ── Day-of-week headers ──
-  html += '<div class="cal-grid">';
-  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(function(d) {
-    html += '<div class="cal-dow">' + d + '</div>';
-  });
-
-  // ── Grid days ──
-  var firstDow = new Date(y, m, 1).getDay();
-  var daysInMonth = new Date(y, m+1, 0).getDate();
-  var daysInPrev  = new Date(y, m, 0).getDate();
-
-  for (var p = firstDow - 1; p >= 0; p--) {
-    html += '<div class="cal-day other-month"><span class="cal-num">' + (daysInPrev - p) + '</span></div>';
-  }
-  for (var day = 1; day <= daysInMonth; day++) {
-    var isToday = (new Date(y, m, day).getTime() === today.getTime());
-    html += '<div class="cal-day' + (isToday ? ' today-day' : '') + '">';
-    html += '<span class="cal-num">' + day + '</span>';
-    if (moonMap[day]) {
-      var phaseName = moonNameMap[day] || '';
-      var shortName = phaseName.replace('First Quarter','1st Qtr').replace('Last Quarter','Last Qtr').replace('New Moon','New').replace('Full Moon','Full');
-      html += '<span class="cal-moon">' + moonMap[day] + '</span>';
-      html += '<span style="font-size:7px;color:var(--gold);text-align:center;line-height:1;margin-top:1px;">' + shortName + '</span>';
+  var html='<div class="cal-nav"><button class="cal-nav-btn" onclick="calMove(-1)">‹</button><div class="cal-month-title">'+MONTHS[m]+' '+y+'</div><button class="cal-nav-btn" onclick="calMove(1)">›</button></div>';
+  html+='<div class="cal-grid">';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(function(d){html+='<div class="cal-dow">'+d+'</div>';});
+  var first=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(), prev=new Date(y,m,0).getDate();
+  for(var p=first-1;p>=0;p--) html+='<div class="cal-day other-month"><span class="cal-num">'+(prev-p)+'</span></div>';
+  for(var day=1;day<=days;day++){
+    var isT=new Date(y,m,day).getTime()===today.getTime();
+    html+='<div class="cal-day'+(isT?' today-day':'')+'"><span class="cal-num">'+day+'</span>';
+    if(moonMap[day]){
+      var short=nameMap[day].replace('First Quarter','1st Qtr').replace('Last Quarter','Last Qtr').replace('New Moon','New').replace('Full Moon','Full');
+      html+='<span class="cal-moon">'+moonMap[day]+'</span><span class="cal-mlabel">'+short+'</span>';
     }
-    if (evMap[day]) {
-      html += '<div style="display:flex;gap:2px;margin-top:2px;flex-wrap:wrap;justify-content:center">';
-      evMap[day].slice(0,3).forEach(function(color) {
-        html += '<div class="cal-dot" style="background:' + color + '"></div>';
-      });
-      html += '</div>';
-    }
-    html += '</div>';
+    if(evMap[day]){html+='<div style="display:flex;gap:2px;margin-top:2px;">';evMap[day].slice(0,3).forEach(function(c){html+='<div style="width:4px;height:4px;border-radius:50%;background:'+c+'"></div>';});html+='</div>';}
+    html+='</div>';
   }
-  var remaining = (7 - ((firstDow + daysInMonth) % 7)) % 7;
-  for (var n = 1; n <= remaining; n++) {
-    html += '<div class="cal-day other-month"><span class="cal-num">' + n + '</span></div>';
-  }
-  html += '</div>'; // end grid
-
-  // ── Phase list ──
-  if (phaseList.length) {
-    html += '<div style="padding:1rem 1rem 0;">';
-    html += '<div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Moon Phases</div>';
-    phaseList.forEach(function(p) {
-      var ordinal = p.day + (p.day===1||p.day===21||p.day===31?'st':p.day===2||p.day===22?'nd':p.day===3||p.day===23?'rd':'th');
-      html += '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">' +
-        '<span style="font-size:22px;width:28px;text-align:center;">' + p.icon + '</span>' +
-        '<div>' +
-          '<div style="font-size:14px;font-weight:600;color:var(--text);">' + MONTHS_S[m] + ' ' + ordinal + ' · ' + p.name + '</div>' +
-          (p.notes ? '<div style="font-size:11px;color:var(--muted);margin-top:1px;">' + p.notes + '</div>' : '') +
-        '</div>' +
-      '</div>';
+  var rem=(7-((first+days)%7))%7;
+  for(var n=1;n<=rem;n++) html+='<div class="cal-day other-month"><span class="cal-num">'+n+'</span></div>';
+  html+='</div>';
+  if(phaseList.length){
+    html+='<div class="phase-section"><div class="phase-hdr">Moon Phases</div>';
+    phaseList.forEach(function(p){
+      var ord=p.day+(p.day===1||p.day===21||p.day===31?'st':p.day===2||p.day===22?'nd':p.day===3||p.day===23?'rd':'th');
+      html+='<div class="phase-item"><span style="font-size:20px;width:26px;text-align:center;">'+p.icon+'</span><div><div style="font-size:13px;font-weight:600;color:var(--text);">'+MONTHS_S[m]+' '+ord+' · '+p.name+'</div>'+(p.notes?'<div style="font-size:11px;color:var(--muted);">'+p.notes+'</div>':'')+' </div></div>';
     });
-    html += '</div>';
+    html+='</div>';
   }
-
-  cv.innerHTML = html;
+  cv.innerHTML=html;
 }
 
-function calMove(dir) {
-  _calDate.setMonth(_calDate.getMonth() + dir);
-  renderCalView();
-}
+function calMove(dir){_calDate.setMonth(_calDate.getMonth()+dir);renderCalView();}
 
 // ── INIT ─────────────────────────────────────────────
 migrateStorage();
