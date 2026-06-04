@@ -678,6 +678,8 @@ function setTime(t) {
   render();
 }
 function setCat(c) {
+  var cv=document.getElementById('calView'),ct=document.getElementById('calTab');
+  if(cv&&cv.style.display!=='none'){cv.style.display='none';document.getElementById('eventList').style.display='';if(ct)ct.classList.remove('on');}
   catFilter=c;
   document.querySelectorAll('#catStrip .cstab').forEach(function(b){
     var isOn=b.getAttribute('data-c')===c, cat=getCat(b.getAttribute('data-c'));
@@ -820,7 +822,10 @@ function stripEmoji(name) {
 function fmtTime(t){if(!t)return'';var p=t.split(':'),h=parseInt(p[0]);return(h%12||12)+':'+p[1]+' '+(h>=12?'PM':'AM');}
 
 function render() {
+  var cv=document.getElementById('calView'),ct=document.getElementById('calTab');
+  if(cv&&cv.style.display!=='none'){cv.style.display='none';if(ct)ct.classList.remove('on');}
   var list=document.getElementById('eventList');
+  if(list) list.style.display='';
   var now=today0(), items=getFiltered();
   if(!items.length){list.innerHTML='<div class="empty"><div class="empty-icon">🌙</div>No events found.</div>';return;}
   var months={},monthOrder=[];
