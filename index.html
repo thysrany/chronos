@@ -292,11 +292,6 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 </div>
 
 <script>
-window.onerror = function(msg, src, line, col, err) {
-  alert('JS ERROR: ' + msg + '\nLine: ' + line + '\n' + (err ? err.stack : ''));
-  return false;
-};
-alert('Script started');
 
 var QUOTES = [
   {
@@ -352,11 +347,13 @@ var QUOTES = [
 ];
 
 var CATS = [
-  { id:'lunar-solar',     label:'🌙☀️ Moon & Sun',  color:'#93c5fd' },
-  { id:'birthday',        label:'🎂 Birthday',      color:'#f472b6' },
-  { id:'events',          label:'🎊 Events',        color:'#a78bfa' },
-  { id:'life',            label:'💼 Life',           color:'#34d399' },
-  { id:'other',           label:'📌 Other',         color:'#94a3b8' },
+  { id:'lunar-solar',  label:'🌙 Moon & Sun',   color:'#7c6faf' },
+  { id:'birthday',     label:'🎂 Birthday',     color:'#e07b8a' },
+  { id:'anniversary',  label:'🥂 Anniversary',  color:'#c084fc' },
+  { id:'holiday',      label:'🎉 Holiday',      color:'#e8a838' },
+  { id:'work',         label:'💼 Work',         color:'#4a9eda' },
+  { id:'personal',     label:'🌿 Personal',     color:'#5caa72' },
+  { id:'other',        label:'✦ Other',         color:'#aaaaaa' }
 ];
 
 var THEMES = [
@@ -668,13 +665,15 @@ function buildCatStrip() {
 }
 
 function setTime(t) {
-  var cv=document.getElementById('calView'),el=document.getElementById('eventList'),ct=document.getElementById('calTab');
-  if(cv&&cv.style.display!=='none'){cv.style.display='none';if(el)el.style.display='';if(ct)ct.classList.remove('on');}
+  var cv=document.getElementById('calView'),ct=document.getElementById('calTab');
+  if(cv&&cv.style.display!=='none'){cv.style.display='none';document.getElementById('eventList').style.display='';if(ct)ct.classList.remove('on');}
   timeFilter=t;
   document.querySelectorAll('#timeBar .ftab').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-t')===t);});
   render();
 }
 function setCat(c) {
+  var cv=document.getElementById('calView'),ct=document.getElementById('calTab');
+  if(cv&&cv.style.display!=='none'){cv.style.display='none';document.getElementById('eventList').style.display='';if(ct)ct.classList.remove('on');}
   catFilter=c;
   document.querySelectorAll('#catStrip .cstab').forEach(function(b){
     var isOn=b.getAttribute('data-c')===c, cat=getCat(b.getAttribute('data-c'));
@@ -696,9 +695,7 @@ function getFiltered() {
     if(!e.date) continue;
     var catMatch = catFilter==='all'
       || e.category===catFilter
-      || (catFilter==='lunar-solar' && (e.category==='lunar'||e.category==='solar'))
-      || (catFilter==='events' && (e.category==='holiday'||e.category==='historic'||e.category==='events'))
-      || (catFilter==='life' && (e.category==='personal'||e.category==='work'||e.category==='vacation'||e.category==='life'));
+      || (catFilter==='lunar-solar' && (e.category==='lunar'||e.category==='solar'));
     if(!catMatch) continue;
     if(e.recur==='once'){
       var d=resolveDate(e);
@@ -820,6 +817,7 @@ function fmtTime(t){if(!t)return'';var p=t.split(':'),h=parseInt(p[0]);return(h%
 
 function render() {
   var list=document.getElementById('eventList');
+  if(list) list.style.display='';
   var now=today0(), items=getFiltered();
   if(!items.length){list.innerHTML='<div class="empty"><div class="empty-icon">🌙</div>No events found.</div>';return;}
   var months={},monthOrder=[];
@@ -1001,8 +999,8 @@ function onSignedIn() {
   var fab=document.getElementById('fab'); if(fab) fab.style.display='flex';
   updateAuthUI(true);
   buildCatStrip();
-  render();
-  loadFromFirestore();
+  render();  // show localStorage events immediately
+  setTimeout(function(){ loadFromFirestore(); }, 500); // then sync from cloud
 }
 
 function updateAuthUI(signedIn) {
@@ -1064,6 +1062,8 @@ function fsRead(docPath, cb) {
 function isAdmin() { return _user && _user.email === ADMIN_EMAIL; }
 
 function loadFromFirestore() {
+  // Always render localStorage events first
+  render();
   if (!_token || !_user) return;
   var uid = btoa(_user.email).replace(/=/g,'');
   // Load personal events first, then admin events
