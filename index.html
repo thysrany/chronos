@@ -875,12 +875,12 @@ function pickCat(id){
     if(byrRow) byrRow.className='show';
     if(byrLabel) byrLabel.textContent='Birth year (to show age e.g. turns 32)';
     if(brelRow) brelRow.style.display='';
-    selRecur='yearly'; setRecur('yearly');
+    selRecur='yearly'; setTimeout(function(){ setRecur('yearly'); }, 10);
   } else if(id==='anniversary'){
     if(byrRow) byrRow.className='show';
     if(byrLabel) byrLabel.textContent='Year it started (to show # of years)';
     if(brelRow) brelRow.style.display='none';
-    selRecur='yearly'; setRecur('yearly');
+    selRecur='yearly'; setTimeout(function(){ setRecur('yearly'); }, 10);
   } else {
     if(byrRow) byrRow.className='';
     if(brelRow) brelRow.style.display='none';
