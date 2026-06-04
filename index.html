@@ -1020,7 +1020,7 @@ function onSignedIn() {
   updateAuthUI(true);
   buildCatStrip();
   render();  // show localStorage events immediately
-  setTimeout(function(){ loadFromFirestore(); }, 500); // then sync from cloud
+  setTimeout(function(){ loadFromFirestore(); startRealtime(); }, 500);
 }
 
 function updateAuthUI(signedIn) {
@@ -1564,6 +1564,76 @@ function importData(input) {
   };
   reader.readAsText(file);
   input.value = '';
+}
+
+
+var _unsubscribe = null;
+var _lastUpdatedAt = 0;
+
+function startRealtime() {
+  if (!_token || !_user) return;
+  stopRealtime();
+  var uid = btoa(_user.email).replace(/=/g,'');
+
+  // Load Firebase SDK dynamically (safe — app already rendered)
+  if (typeof firebase !== 'undefined' && firebase.firestore) {
+    subscribeSnapshot(uid); return;
+  }
+  var loaded = 0;
+  ['firebase-app-compat','firebase-firestore-compat'].forEach(function(name){
+    var s = document.createElement('script');
+    s.src = 'https://www.gstatic.com/firebasejs/10.12.0/'+name+'.js';
+    s.onload = function(){
+      loaded++;
+      if (loaded === 2) {
+        try {
+          var cfg = {apiKey:FB_API_KEY, projectId:FB_PROJECT,
+            authDomain:FB_PROJECT+'.firebaseapp.com',
+            appId:'1:55277159527:web:90abfdf1c812a7707680c2'};
+          if (!firebase.apps.length) firebase.initializeApp(cfg);
+          subscribeSnapshot(uid);
+        } catch(e) { fallbackPolling(uid); }
+      }
+    };
+    s.onerror = function(){ fallbackPolling(uid); };
+    document.body.appendChild(s);
+  });
+}
+
+function subscribeSnapshot(uid) {
+  var db = firebase.firestore();
+  _unsubscribe = db.collection('chronos').doc('users_'+uid).onSnapshot(function(doc){
+    if (!doc.exists) return;
+    var data = doc.data();
+    if (!data || !data.events) return;
+    var cloudTime = data.updatedAt || 0;
+    if (cloudTime > _lastUpdatedAt) {
+      _lastUpdatedAt = cloudTime;
+      var seeds = events.filter(function(e){ return e.category==='lunar'||e.category==='solar'; });
+      var personal = data.events;
+      var allIds = {}; personal.forEach(function(e){ allIds[e.id]=true; });
+      var newSeeds = seeds.filter(function(e){ return !allIds[e.id]; });
+      events = personal.concat(newSeeds);
+      try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(ex){}
+      render();
+      showToast('\u2713 Synced!');
+    }
+  }, function(){ fallbackPolling(uid); });
+}
+
+function fallbackPolling(uid) {
+  _unsubscribe = setInterval(function(){
+    if (!_token || !_user) { stopRealtime(); return; }
+    loadFromFirestore();
+  }, 15000);
+}
+
+function stopRealtime() {
+  if (_unsubscribe) {
+    if (typeof _unsubscribe === 'function') _unsubscribe();
+    else clearInterval(_unsubscribe);
+    _unsubscribe = null;
+  }
 }
 
 // ── INIT ─────────────────────────────────────────────
