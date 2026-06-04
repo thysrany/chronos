@@ -540,16 +540,20 @@ var SOLAR_DATA = [
 ];
 
 function seedLunar() {
-  if (localStorage.getItem('ch4e_seeded')) return;
-  events = LUNAR_DATA.map(function(e) {
-    return {id:e.id,name:e.name,date:e.date,time:e.time,category:'lunar',recur:'once',notes:e.notes,birthYear:null};
+  if (localStorage.getItem('ch4d_seeded2')) return;
+  // MERGE lunar/solar into existing events — never replace
+  var existingIds = {};
+  events.forEach(function(e){ existingIds[e.id]=true; });
+  var toAdd = [];
+  LUNAR_DATA.forEach(function(e){
+    if(!existingIds[e.id]) toAdd.push({id:e.id,name:e.name,date:e.date,time:e.time,category:'lunar',recur:'once',notes:e.notes,birthYear:null});
   });
-  var solarEvents = SOLAR_DATA.map(function(e) {
-    return {id:e.id,name:e.name,date:e.date,time:e.time,category:'solar',recur:'once',notes:e.notes,birthYear:null};
+  SOLAR_DATA.forEach(function(e){
+    if(!existingIds[e.id]) toAdd.push({id:e.id,name:e.name,date:e.date,time:e.time,category:'solar',recur:'once',notes:e.notes,birthYear:null});
   });
-  events = events.concat(solarEvents);
+  events = events.concat(toAdd);
   saveEventsLocal();
-  localStorage.setItem('ch4e_seeded','1');
+  localStorage.setItem('ch4d_seeded2','1');
 }
 
 // ── THEME ─────────────────────────────────────────────
@@ -809,7 +813,11 @@ function stripEmoji(name) {
 function fmtTime(t){if(!t)return'';var p=t.split(':'),h=parseInt(p[0]);return(h%12||12)+':'+p[1]+' '+(h>=12?'PM':'AM');}
 
 function render() {
+  var cv=document.getElementById('calView');
+  var ct=document.getElementById('calTab');
+  if(cv&&cv.style.display!=='none'){cv.style.display='none';if(ct)ct.classList.remove('on');}
   var list=document.getElementById('eventList');
+  if(list) list.style.display='';
   var now=today0(), items=getFiltered();
   if(!items.length){list.innerHTML='<div class="empty"><div class="empty-icon">🌙</div>No events found.</div>';return;}
   var months={},monthOrder=[];
@@ -983,9 +991,15 @@ function fetchUserInfo() {
 }
 
 function onSignedIn() {
+  var splash=document.getElementById('splash');
+  if(splash){splash.classList.add('hidden');splash.style.display='none';}
   document.getElementById('signinScreen').classList.add('hidden');
-  document.getElementById('app').style.display = '';
+  document.getElementById('app').style.display='';
+  document.getElementById('app').classList.add('show');
+  var fab=document.getElementById('fab'); if(fab) fab.style.display='flex';
   updateAuthUI(true);
+  buildCatStrip();
+  render();
   loadFromFirestore();
 }
 
@@ -1199,7 +1213,7 @@ function startEditEvent() {
 
 // ── MIGRATE old localStorage keys into current key ───
 function migrateStorage() {
-  var OLD_KEYS = ['ch_events','ch3_events','ch4_events','ch4b_events','ch4c_events'];
+  var OLD_KEYS = ['ch_events','ch3_events','ch4_events','ch4b_events','ch4c_events','ch4d_events'];
   var current = [];
   try { current = JSON.parse(localStorage.getItem('ch4d_events') || '[]'); } catch(e){ current = []; }
   var currentIds = {};
@@ -1283,7 +1297,7 @@ document.getElementById('eventList').addEventListener('click', function(ev) {
 
 
 function migrateStorage() {
-  var OLD_KEYS = ['ch_events','ch3_events','ch4_events','ch4b_events','ch4c_events'];
+  var OLD_KEYS = ['ch_events','ch3_events','ch4_events','ch4b_events','ch4c_events','ch4d_events'];
   var current = [];
   try { current = JSON.parse(localStorage.getItem('ch4d_events') || '[]'); } catch(e){ current = []; }
   var ids = {}; current.forEach(function(e){ ids[e.id]=true; });
