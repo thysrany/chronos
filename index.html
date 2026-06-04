@@ -230,6 +230,9 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
   <div class="bottom-nav">
     <button class="bnav-btn on"><span class="bnav-icon">📅</span>Events</button>
     <button class="bnav-btn" id="syncNavBtn" onclick="syncNow()" style="display:none"><span class="bnav-icon">↻</span>Sync</button>
+    <button class="bnav-btn" onclick="exportData()" style="display:none" id="exportBtn"><span class="bnav-icon">⬆</span>Export</button>
+    <button class="bnav-btn" onclick="document.getElementById('importFile').click()"><span class="bnav-icon">⬇</span>Import</button>
+    <input type="file" id="importFile" accept=".csv,.json" style="display:none" onchange="importData(this)">
   </div>
 </div>
 
@@ -1010,6 +1013,7 @@ function updateAuthUI(signedIn) {
   if (signedIn && _user) {
     if (addBtn)  addBtn.style.display  = '';
     var fab=document.getElementById('fab'); if(fab) fab.style.display='flex';
+    var eb=document.getElementById('exportBtn'); if(eb) eb.style.display='';
     if (syncBtn) syncBtn.style.display = '';
     var admin = _user.email === ADMIN_EMAIL;
     chip.style.display = 'flex';
@@ -1024,6 +1028,7 @@ function updateAuthUI(signedIn) {
   } else {
     if (addBtn)  addBtn.style.display  = 'none';
     var fab=document.getElementById('fab'); if(fab) fab.style.display='none';
+    var eb=document.getElementById('exportBtn'); if(eb) eb.style.display='none';
     if (syncBtn) syncBtn.style.display = 'none';
     chip.style.display = 'none';
     chip.innerHTML = '';
@@ -1036,27 +1041,67 @@ function fsUrl(docPath) {
          '/databases/(default)/documents/' + docPath + '?key=' + FB_API_KEY;
 }
 
-function fsWrite(docPath, data) {
-  if (!_token) return;
-  var fields = {};
-  fields['eventsJson'] = { stringValue: JSON.stringify(data) };
-  fetch('https://firestore.googleapis.com/v1/projects/' + FB_PROJECT +
-        '/databases/(default)/documents/' + docPath + '?key=' + FB_API_KEY, {
-    method: 'PATCH',
-    headers: { 'Authorization': 'Bearer ' + _token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fields: fields })
+// ── Firestore value converters (exact SpeakDeck pattern) ──
+function toFields(obj){ var f={}; Object.keys(obj).forEach(function(k){ f[k]=toVal(obj[k]); }); return f; }
+function toVal(v){
+  if(v===null||v===undefined) return {nullValue:null};
+  if(typeof v==='boolean')    return {booleanValue:v};
+  if(typeof v==='number')     return {integerValue:''+v};
+  if(typeof v==='string')     return {stringValue:v};
+  if(Array.isArray(v))        return {arrayValue:{values:v.map(toVal)}};
+  if(typeof v==='object')     return {mapValue:{fields:toFields(v)}};
+  return {stringValue:''+v};
+}
+function fromFields(fields){ if(!fields) return {}; var obj={}; Object.keys(fields).forEach(function(k){ obj[k]=fromVal(fields[k]); }); return obj; }
+function fromVal(v){
+  if(!v) return null;
+  if('nullValue'    in v) return null;
+  if('booleanValue' in v) return v.booleanValue;
+  if('integerValue' in v) return Number(v.integerValue);
+  if('doubleValue'  in v) return v.doubleValue;
+  if('stringValue'  in v) return v.stringValue;
+  if('arrayValue'   in v) return (v.arrayValue.values||[]).map(fromVal);
+  if('mapValue'     in v) return fromFields(v.mapValue.fields||{});
+  return null;
+}
+
+// ── Firestore REST (exact SpeakDeck pattern) ──
+var FS_BASE = 'https://firestore.googleapis.com/v1/projects/'+FB_PROJECT+'/databases/(default)/documents/';
+
+function fsGet(path, token){
+  return fetch(FS_BASE+path, {headers:{'Authorization':'Bearer '+token}})
+    .then(function(r){ return r.ok ? r.json() : null; });
+}
+function fsSave(path, token, data){
+  return fetch(FS_BASE+path+'?key='+FB_API_KEY, {
+    method:'PATCH',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body:JSON.stringify({fields:toFields(data)})
   });
 }
 
-function fsRead(docPath, cb) {
+function fsWrite(docPath, data) {
   if (!_token) return;
-  fetch(fsUrl(docPath), {
-    headers: { 'Authorization': 'Bearer ' + _token }
-  }).then(function(r) { return r.json(); }).then(function(doc) {
-    if (doc.fields && doc.fields.eventsJson) {
-      try { cb(JSON.parse(doc.fields.eventsJson.stringValue)); } catch(e) { cb(null); }
-    } else { cb(null); }
-  }).catch(function() { cb(null); });
+  fsSave(docPath, _token, {events: data, updatedAt: Date.now()})
+    .then(function(r){
+      if(!r.ok) r.text().then(function(t){ console.error('fsWrite error',r.status,t); });
+    }).catch(function(e){ console.error('fsWrite failed',e); });
+}
+
+function fsRead(docPath, cb) {
+  if (!_token) { cb(null); return; }
+  fsGet(docPath, _token).then(function(doc){
+    if(!doc||!doc.fields){ cb(null); return; }
+    var data = fromFields(doc.fields);
+    // Support both new format (data.events) and old format (eventsJson string)
+    if(data.events && Array.isArray(data.events)){
+      cb(data.events);
+    } else if(doc.fields.eventsJson && doc.fields.eventsJson.stringValue){
+      try{ cb(JSON.parse(doc.fields.eventsJson.stringValue)); }catch(e){ cb(null); }
+    } else {
+      cb(null);
+    }
+  }).catch(function(){ cb(null); });
 }
 
 function isAdmin() { return _user && _user.email === ADMIN_EMAIL; }
@@ -1445,6 +1490,64 @@ function renderCalView() {
 }
 
 function calMove(dir){_calDate.setMonth(_calDate.getMonth()+dir);renderCalView();}
+
+
+function exportData() {
+  var personal = events.filter(function(e){ return e.category!=='lunar'&&e.category!=='solar'; });
+  var rows = ['id,name,date,time,category,recur,notes,birthYear,bRel,isPublic'];
+  personal.forEach(function(e) {
+    var row = [
+      e.id||'', e.name||'', e.date||'', e.time||'', e.category||'',
+      e.recur||'once', (e.notes||'').replace(/,/g,';'),
+      e.birthYear||'', e.bRel||'', e.isPublic?'true':'false'
+    ].map(function(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }).join(',');
+    rows.push(row);
+  });
+  var csv = rows.join('\n');
+  var blob = new Blob([csv], {type:'text/csv'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'chronos-backup-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast('\u2713 Exported ' + personal.length + ' events!');
+}
+
+function importData(input) {
+  var file = input.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var lines = e.target.result.split('\n').filter(function(l){ return l.trim(); });
+      if (lines.length < 2) { showToast('Empty file'); return; }
+      var headers = lines[0].replace(/"/g,'').split(',');
+      var existingIds = {};
+      events.forEach(function(ev){ existingIds[ev.id]=true; });
+      var added = 0;
+      for (var i=1; i<lines.length; i++) {
+        var vals = lines[i].match(/("(?:[^"]|"")*"|[^,]*)/g)||[];
+        vals = vals.filter(function(v,idx){ return idx%2===0; }).map(function(v){ return v.replace(/^"|"$/g,'').replace(/""/g,'"'); });
+        var ev = {};
+        headers.forEach(function(h,hi){ ev[h.trim()] = vals[hi]||''; });
+        if (!ev.name||!ev.date) continue;
+        if (!ev.id) ev.id = 'i'+Date.now()+i;
+        if (existingIds[ev.id]) continue;
+        if (ev.birthYear) ev.birthYear = ev.birthYear;
+        if (ev.isPublic) ev.isPublic = ev.isPublic==='true';
+        events.push(ev);
+        existingIds[ev.id]=true;
+        added++;
+      }
+      try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(ex){}
+      if (_token && _user) syncNow();
+      render();
+      showToast('\u2713 Imported ' + added + ' events!');
+    } catch(ex) { showToast('Import failed: ' + ex.message); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
 
 // ── INIT ─────────────────────────────────────────────
 migrateStorage();
