@@ -5,7 +5,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v29 -->
+<!-- v30 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ChronosCalendar.app</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%230f0c29'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='35%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23cbd5e1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='200' cy='200' r='200' fill='url(%23a)'/%3E%3Ccircle cx='200' cy='200' r='185' fill='none' stroke='%23f59e0b' stroke-width='6' opacity='0.6'/%3E%3Ccircle cx='200' cy='185' r='100' fill='url(%23b)'/%3E%3Ccircle cx='245' cy='168' r='88' fill='url(%23a)'/%3E%3Ccircle cx='148' cy='103' r='8' fill='%23fde68a'/%3E%3Ccircle cx='310' cy='130' r='9' fill='%23fde68a' opacity='0.9'/%3E%3C/svg%3E">
@@ -98,7 +98,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 .empty-icon { font-size:36px; margin-bottom:1rem; opacity:.4; }
 
 /* ── BOTTOM NAV ── */
-.bottom-nav { background:var(--bg2); border-top:1px solid var(--border); display:flex; flex-shrink:0; padding-bottom:env(safe-area-inset-bottom); }
+.bottom-nav { background:var(--bg2); border-top:1px solid var(--border); display:flex; flex-shrink:0; padding-bottom:env(safe-area-inset-bottom); justify-content:center; gap:0; }
 .bnav-btn { flex:1; padding:8px 0; border:none; background:transparent; color:var(--dim); font-family:'Open Sans',sans-serif; font-size:9px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px; }
 .bnav-btn.on { color:var(--gold); }
 .bnav-icon { font-size:18px; }
@@ -159,6 +159,11 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 .phase-section { padding:1rem; }
 .phase-hdr { font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
 .phase-item { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--border); }
+
+
+@media (min-width: 600px) {
+  #toast { bottom: 24px !important; top: auto !important; }
+}
 
 /* toast uses inline styles */
 /* ── MONTH ACTION ── */
@@ -228,8 +233,8 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
   <div class="event-list" id="eventList"></div>
 <div id="calView" style="display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:80px;"></div>
 
-  <div class="bottom-nav" style="justify-content:space-around;">
-    <button class="bnav-btn" id="addNavBtn" onclick="openModal()" style="display:none;background:var(--gold);border-radius:50%;width:52px;height:52px;padding:0;flex-direction:column;align-items:center;justify-content:center;margin:4px auto;box-shadow:0 4px 16px rgba(0,0,0,0.35);"><span style="font-size:28px;font-weight:900;color:#0d1117;line-height:1;">＋</span></button>
+  <div class="bottom-nav">
+    <button id="addNavBtn" onclick="openModal()" style="display:none;background:var(--gold);border:none;border-radius:50%;width:52px;height:52px;flex-shrink:0;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.35);touch-action:manipulation;margin:6px 16px;"><span style="font-size:28px;font-weight:900;color:#0d1117;line-height:1;">＋</span></button>
   </div>
 </div>
 
