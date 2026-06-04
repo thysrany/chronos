@@ -5,7 +5,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v24 -->
+<!-- v25 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ChronosCalendar.app</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%230f0c29'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='35%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23cbd5e1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='200' cy='200' r='200' fill='url(%23a)'/%3E%3Ccircle cx='200' cy='200' r='185' fill='none' stroke='%23f59e0b' stroke-width='6' opacity='0.6'/%3E%3Ccircle cx='200' cy='185' r='100' fill='url(%23b)'/%3E%3Ccircle cx='245' cy='168' r='88' fill='url(%23a)'/%3E%3Ccircle cx='148' cy='103' r='8' fill='%23fde68a'/%3E%3Ccircle cx='310' cy='130' r='9' fill='%23fde68a' opacity='0.9'/%3E%3C/svg%3E">
@@ -215,8 +215,8 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
       </div>
     </div>
     <div class="filter-bar" id="timeBar">
-      <button class="ftab" data-t="upcoming" onclick="setTime('upcoming')">Upcoming</button>
-      <button class="ftab on" data-t="all" onclick="setTime('all')">All</button>
+      <button class="ftab on" data-t="upcoming" onclick="setTime('upcoming')">Upcoming</button>
+      <button class="ftab" data-t="all" onclick="setTime('all')">All</button>
       <button class="ftab" data-t="past" onclick="setTime('past')">Past</button>
       <div style="flex:1"></div>
       <button class="ftab" id="calTab" onclick="showCalView()">📅</button>
@@ -231,9 +231,6 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
   <div class="bottom-nav">
     <button class="bnav-btn on"><span class="bnav-icon">📅</span>Events</button>
     <button class="bnav-btn" id="syncNavBtn" onclick="syncNow()" style="display:none"><span class="bnav-icon">↻</span>Sync</button>
-    <button class="bnav-btn" onclick="exportData()" style="display:none" id="exportBtn"><span class="bnav-icon">⬆</span>Export</button>
-    <button class="bnav-btn" onclick="document.getElementById('importFile').click()"><span class="bnav-icon">⬇</span>Import</button>
-    <input type="file" id="importFile" accept=".csv,.json" style="display:none" onchange="importData(this)">
   </div>
 </div>
 
@@ -373,7 +370,7 @@ var DNAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 var MONTHS_S = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 var events = [];
-var timeFilter = 'all';
+var timeFilter = 'upcoming';
 var catFilter  = 'all';
 var selCat     = 'lunar';
 var selRecur   = 'once';
@@ -1525,7 +1522,7 @@ function renderCalView() {
     html+='<div class="phase-section"><div class="phase-hdr">Moon Phases</div>';
     phaseList.forEach(function(p){
       var ord=p.day+(p.day===1||p.day===21||p.day===31?'st':p.day===2||p.day===22?'nd':p.day===3||p.day===23?'rd':'th');
-      html+='<div class="phase-item"><span style="font-size:20px;width:26px;text-align:center;">'+p.icon+'</span><div><div style="font-size:13px;font-weight:600;color:var(--text);">'+MONTHS_S[m]+' '+ord+' · '+p.name+'</div>'+(p.notes?'<div style="font-size:11px;color:var(--muted);">'+p.notes+'</div>':'')+' </div></div>';
+      var pDate=new Date(_calDate.getFullYear(),_calDate.getMonth(),p.day); var pDay=DNAMES[pDate.getDay()]; html+='<div class="phase-item"><span style="font-size:20px;width:26px;text-align:center;">'+p.icon+'</span><div><div style="font-size:13px;font-weight:600;color:var(--text);">'+pDay+' · '+MONTHS_S[m]+' '+ord+' · '+p.name+'</div>'+(p.notes?'<div style="font-size:11px;color:var(--muted);">'+p.notes+'</div>':'')+' </div></div>';
     });
     html+='</div>';
   }
