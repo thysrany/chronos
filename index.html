@@ -292,6 +292,12 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 </div>
 
 <script>
+window.onerror = function(msg, src, line, col, err) {
+  alert('JS ERROR: ' + msg + '\nLine: ' + line + '\n' + (err ? err.stack : ''));
+  return false;
+};
+alert('Script started');
+
 var QUOTES = [
   {
     t: "The secret of getting ahead is getting started.",
