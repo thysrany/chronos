@@ -867,8 +867,24 @@ function pickCat(id){
   document.querySelectorAll('.catbtn').forEach(function(b){b.classList.remove('on');b.style.borderColor='';b.style.color='';});
   var btn=document.getElementById('cb-'+id);
   if(btn){var c=getCat(id);btn.classList.add('on');btn.style.borderColor=c.color;btn.style.color=c.color;}
-  document.getElementById('byr-row').className=(id==='birthday')?'show':'';
   document.getElementById('lunarHint').className='lunar-hint'+(id==='lunar-solar'?' show':'');
+  var byrRow=document.getElementById('byr-row');
+  var byrLabel=document.getElementById('byr-label');
+  var brelRow=document.getElementById('brel-row');
+  if(id==='birthday'){
+    if(byrRow) byrRow.className='show';
+    if(byrLabel) byrLabel.textContent='Birth year (to show age e.g. turns 32)';
+    if(brelRow) brelRow.style.display='';
+    selRecur='yearly'; setRecur('yearly');
+  } else if(id==='anniversary'){
+    if(byrRow) byrRow.className='show';
+    if(byrLabel) byrLabel.textContent='Year it started (to show # of years)';
+    if(brelRow) brelRow.style.display='none';
+    selRecur='yearly'; setRecur('yearly');
+  } else {
+    if(byrRow) byrRow.className='';
+    if(brelRow) brelRow.style.display='none';
+  }
 }
 function setVisibility(v) {
   selVisibility = v;
