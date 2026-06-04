@@ -893,6 +893,7 @@ function openModal(){
   ['mName','mDate','mTime','mNotes','mBYear'].forEach(function(id){document.getElementById(id).value='';});
   buildCatGrid();setRecur('once');
   document.getElementById('byr-row').className='';
+  var brelRowM=document.getElementById('brel-row'); if(brelRowM) brelRowM.style.display='none';
   selBRel='friend'; setBRel('friend');
   selVisibility='private'; setVisibility('private');
   document.getElementById('lunarHint').className='lunar-hint show';
