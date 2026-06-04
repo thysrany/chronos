@@ -631,7 +631,11 @@ function enterApp() {
   s.classList.add('hidden');
   setTimeout(function() {
     s.style.display='none';
-    if (!_user) {
+    if (_user) {
+      document.getElementById('app').style.display='';
+      document.getElementById('app').classList.add('show');
+      var fab=document.getElementById('fab'); if(fab) fab.style.display='flex';
+    } else {
       document.getElementById('signinScreen').classList.remove('hidden');
     }
   }, 700);
@@ -1011,11 +1015,14 @@ function fetchUserInfo() {
 }
 
 function onSignedIn() {
-  // Don't hide splash — let user see the quote and tap Enter
+  // Hide sign-in, show splash quote first, then user taps Enter to see app
   document.getElementById('signinScreen').classList.add('hidden');
-  document.getElementById('app').style.display='';
-  document.getElementById('app').classList.add('show');
-  var fab=document.getElementById('fab'); if(fab) fab.style.display='flex';
+  var splash = document.getElementById('splash');
+  if (splash) {
+    initSplash();
+    splash.style.display = '';
+    splash.classList.remove('hidden');
+  }
   updateAuthUI(true);
   buildCatStrip();
   render();
