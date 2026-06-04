@@ -5,6 +5,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<!-- v22 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ChronosCalendar.app</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%230f0c29'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='35%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23cbd5e1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='200' cy='200' r='200' fill='url(%23a)'/%3E%3Ccircle cx='200' cy='200' r='185' fill='none' stroke='%23f59e0b' stroke-width='6' opacity='0.6'/%3E%3Ccircle cx='200' cy='185' r='100' fill='url(%23b)'/%3E%3Ccircle cx='245' cy='168' r='88' fill='url(%23a)'/%3E%3Ccircle cx='148' cy='103' r='8' fill='%23fde68a'/%3E%3Ccircle cx='310' cy='130' r='9' fill='%23fde68a' opacity='0.9'/%3E%3C/svg%3E">
@@ -164,7 +165,7 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 .maction-btn { background:transparent; border:none; color:var(--gold); font-size:18px; cursor:pointer; padding:2px 8px; line-height:1; touch-action:manipulation; }
 .month-copy-btn { background:transparent; border:1px solid rgba(201,168,76,0.3); border-radius:6px; color:var(--gold); font-size:10px; padding:6px 12px; cursor:pointer; font-family:'Open Sans',sans-serif; touch-action:manipulation; -webkit-tap-highlight-color:rgba(201,168,76,0.3); }
 .month-copy-btn:hover { opacity:1; background:rgba(201,168,76,0.1); }
-.mcopy-btn { padding:3px 10px; border-radius:6px; border:1px solid var(--gold); background:transparent; color:var(--gold); font-size:12px; cursor:pointer; touch-action:manipulation; white-space:nowrap; font-weight:600; }
+.mcopy-btn { padding:5px 12px; border-radius:6px; border:1px solid var(--gold); background:rgba(201,168,76,0.1); color:var(--gold); font-size:13px; cursor:pointer; touch-action:manipulation; white-space:nowrap; font-weight:600; }
 </style>
 </head>
 <body class="theme-light">
@@ -218,7 +219,6 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
       <button class="ftab on" data-t="all" onclick="setTime('all')">All</button>
       <button class="ftab" data-t="past" onclick="setTime('past')">Past</button>
       <div style="flex:1"></div>
-      <button class="ftab" id="calTab" onclick="showCalView()">📅</button>
       <button class="ftab" onclick="goHome()" title="Quote">🏠</button>
     </div>
   </div>
@@ -262,11 +262,12 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
         <label class="flabel">Birth Year (optional — shows age)</label>
         <input class="finput" id="mBYear" type="number" placeholder="e.g. 1990" min="1900" max="2024" />
         <div style="margin-top:8px">
-          <label class="flabel">Relationship</label>
+          <div id="brel-row" style="display:none"><label class="flabel">Relationship</label>
           <div class="togrow">
-            <button class="togbtn on" id="bRelFriend" onclick="setBRel('friend')">👫 Friend</button>
+            <button class="togbtn on" id="bRelFriend" onclick="setBRel('friend')">👫 Friends</button>
             <button class="togbtn" id="bRelFamily" onclick="setBRel('family')">👨‍👩‍👧 Family</button>
-          </div>
+            <button class="togbtn" id="bRelEvent" onclick="setBRel('event')">🎉 Event</button>
+          </div></div>
         </div>
       </div>
       <div class="lunar-hint" id="lunarHint">🌙☀️ For moon phases, name it e.g. 'Full Moon'. For solar events, name it e.g. 'Summer Solstice'.</div>
@@ -295,7 +296,6 @@ body.theme-forest   { --bg:#0d1a0f; --bg2:#111f13; --bg3:#162819; --border:#2a4a
 </div>
 
 <script>
-
 var QUOTES = [
   {
     t: "The secret of getting ahead is getting started.",
@@ -547,17 +547,16 @@ var SOLAR_DATA = [
 
 function seedLunar() {
   if (localStorage.getItem('ch4d_seeded3')) return;
-  // MERGE lunar/solar into existing events — never replace
-  var existingIds = {};
+  var existingIds={};
   events.forEach(function(e){ existingIds[e.id]=true; });
-  var toAdd = [];
+  var toAdd=[];
   LUNAR_DATA.forEach(function(e){
     if(!existingIds[e.id]) toAdd.push({id:e.id,name:e.name,date:e.date,time:e.time,category:'lunar',recur:'once',notes:e.notes,birthYear:null});
   });
   SOLAR_DATA.forEach(function(e){
     if(!existingIds[e.id]) toAdd.push({id:e.id,name:e.name,date:e.date,time:e.time,category:'solar',recur:'once',notes:e.notes,birthYear:null});
   });
-  events = events.concat(toAdd);
+  events=events.concat(toAdd);
   saveEventsLocal();
   localStorage.setItem('ch4d_seeded3','1');
 }
@@ -627,20 +626,19 @@ function goHome() {
 }
 
 function enterApp() {
-  var s = document.getElementById('splash');
+  var s=document.getElementById('splash');
   s.classList.add('hidden');
-  setTimeout(function() {
+  setTimeout(function(){
     s.style.display='none';
-    if (_user) {
+    if(_user){
       document.getElementById('app').style.display='';
       document.getElementById('app').classList.add('show');
       var fab=document.getElementById('fab'); if(fab) fab.style.display='flex';
     } else {
       document.getElementById('signinScreen').classList.remove('hidden');
     }
-  }, 700);
+  },700);
 }
-
 function showToast(msg) {
   var t = document.getElementById('toast');
   if (!t) return;
@@ -679,8 +677,6 @@ function setTime(t) {
   render();
 }
 function setCat(c) {
-  var cv=document.getElementById('calView'),ct=document.getElementById('calTab');
-  if(cv&&cv.style.display!=='none'){cv.style.display='none';document.getElementById('eventList').style.display='';if(ct)ct.classList.remove('on');}
   catFilter=c;
   document.querySelectorAll('#catStrip .cstab').forEach(function(b){
     var isOn=b.getAttribute('data-c')===c, cat=getCat(b.getAttribute('data-c'));
@@ -824,7 +820,6 @@ function fmtTime(t){if(!t)return'';var p=t.split(':'),h=parseInt(p[0]);return(h%
 
 function render() {
   var list=document.getElementById('eventList');
-  if(list) list.style.display='';
   var now=today0(), items=getFiltered();
   if(!items.length){list.innerHTML='<div class="empty"><div class="empty-icon">🌙</div>No events found.</div>';return;}
   var months={},monthOrder=[];
@@ -836,17 +831,17 @@ function render() {
   var html='';
   for(var mi=0;mi<monthOrder.length;mi++){
     var mg=months[monthOrder[mi]];
-    html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class="mcopy-btn" onclick="copyMonth('+mg.y+','+mg.m+',this)">⧉</button></div>';
+        html+='<div class="month-header"><span>'+MONTHS[mg.m]+' '+mg.y+'</span><button class="mcopy-btn" onclick="copyMonth('+mg.y+','+mg.m+',this)">⧉</button></div>';
     for(var ii=0;ii<mg.items.length;ii++){
       var item=mg.items[ii],e=item.ev,d=item.date,cat=getCat(e.category);
       var isToday=d.getTime()===now.getTime();
       var diff=Math.round((d-now)/86400000);
       var icon=e.category==='lunar'?(e.name.indexOf('🌑')>=0?'🌑':e.name.indexOf('🌓')>=0?'🌓':e.name.indexOf('🌕')>=0?'🌕':e.name.indexOf('🌗')>=0?'🌗':'🌙'):e.category==='solar'?(e.name.indexOf('🌸')>=0?'🌸':e.name.indexOf('☀️')>=0?'☀️':e.name.indexOf('🍂')>=0?'🍂':e.name.indexOf('❄️')>=0?'❄️':'☀️'):cat.label.split(' ')[0];
-      var showTime=(e.category==='lunar'||e.category==='solar'); var dateStr=DNAMES[d.getDay()]+' · '+MONTHS_S[d.getMonth()]+' '+d.getDate()+(showTime&&e.time?' · '+fmtTime(e.time):'')+(e.birthYear?' ― b. '+e.birthYear:''); var birthLine='';
+      var showTime=(e.category==='lunar'||e.category==='solar'); var dateStr=DNAMES[d.getDay()]+' · '+MONTHS_S[d.getMonth()]+' '+d.getDate()+(e.birthYear?' ― b. '+e.birthYear:'')+(showTime&&e.time?' · '+fmtTime(e.time):'');
       var cdClass='ev-cd'+(isToday?' today':diff<0?' past':'');
       var cdText=isToday?'🎉 Today':diff>0?diff+' day'+(diff>1?'s':'')+' left':Math.abs(diff)+' day'+(Math.abs(diff)>1?'s':'')+' ago';
       var rightHtml='';
-      if(e.birthYear){var age=mg.y-parseInt(e.birthYear);var lbl2=e.category==='anniversary'?'years':'turns';rightHtml='<div class="ev-right"><div class="ev-turns">'+lbl2+'</div><div class="ev-age">'+age+'</div></div>';}
+      if(e.birthYear){var age=mg.y-parseInt(e.birthYear);var lbl=e.category==='anniversary'?'years':'turns';rightHtml='<div class="ev-right"><div class="ev-turns">'+lbl+'</div><div class="ev-age">'+age+'</div></div>';}
       else if(isToday){rightHtml='<div class="ev-right"><div style="font-size:26px">🎉</div></div>';}
       else{var col=diff>=0?'var(--text)':'var(--dim)';rightHtml='<div class="ev-right"><div class="ev-dnum" style="color:'+col+'">'+Math.abs(diff)+'</div><div class="ev-dlbl">'+(diff>=0?'days left':'days ago')+'</div></div>';}
       html+='<div class="event-item'+(isToday?' today-item':'')+'" onclick="openEdit(\''+e.id+'\')">' +
@@ -899,9 +894,9 @@ function setVisibility(v) {
 }
 function setBRel(r){
   selBRel=r;
-  ['bRelFriend','bRelFamily'].forEach(function(id,i){
+  ['bRelFriend','bRelFamily','bRelEvent'].forEach(function(id,i){
     var el=document.getElementById(id);
-    if(el) el.classList.toggle('on',['friend','family'][i]===r);
+    if(el) el.classList.toggle('on',['friend','family','event'][i]===r);
   });
 }
 function setRecur(r){
@@ -910,10 +905,10 @@ function setRecur(r){
 }
 function openModal(){
   selCat='lunar-solar';selRecur='once';
+  var brelRowM=document.getElementById('brel-row'); if(brelRowM) brelRowM.style.display='none';
   ['mName','mDate','mTime','mNotes','mBYear'].forEach(function(id){document.getElementById(id).value='';});
   setRecur('once');buildCatGrid();
   document.getElementById('byr-row').className='';
-  var brelRowM=document.getElementById('brel-row'); if(brelRowM) brelRowM.style.display='none';
   selBRel='friend'; setBRel('friend');
   selVisibility='private'; setVisibility('private');
   document.getElementById('lunarHint').className='lunar-hint show';
@@ -1016,18 +1011,18 @@ function fetchUserInfo() {
 
 function onSignedIn() {
   document.getElementById('signinScreen').classList.add('hidden');
-  // Show quote splash first
-  var splash = document.getElementById('splash');
+  // Show quote splash first, then user taps Enter to see app
+  var splash=document.getElementById('splash');
   initSplash();
-  splash.style.display = '';
-  splash.style.opacity = '0';
+  splash.style.display='';
+  splash.style.opacity='0';
   splash.classList.remove('hidden');
-  setTimeout(function(){ splash.style.opacity = '1'; }, 10);
-  // Load data in background
+  setTimeout(function(){ splash.style.opacity='1'; },10);
+  // Prepare app in background
   updateAuthUI(true);
   buildCatStrip();
   render();
-  setTimeout(function(){ loadFromFirestore(); startRealtime(); }, 500);
+  setTimeout(function(){ loadFromFirestore(); },500);
 }
 
 function updateAuthUI(signedIn) {
@@ -1065,7 +1060,6 @@ function fsUrl(docPath) {
          '/databases/(default)/documents/' + docPath + '?key=' + FB_API_KEY;
 }
 
-// ── Firestore value converters (exact SpeakDeck pattern) ──
 function toFields(obj){ var f={}; Object.keys(obj).forEach(function(k){ f[k]=toVal(obj[k]); }); return f; }
 function toVal(v){
   if(v===null||v===undefined) return {nullValue:null};
@@ -1088,72 +1082,47 @@ function fromVal(v){
   if('mapValue'     in v) return fromFields(v.mapValue.fields||{});
   return null;
 }
-
-// ── Firestore REST (exact SpeakDeck pattern) ──
-var FS_BASE = 'https://firestore.googleapis.com/v1/projects/'+FB_PROJECT+'/databases/(default)/documents/';
-
-function fsGet(path, token){
-  return fetch(FS_BASE+path, {headers:{'Authorization':'Bearer '+token}})
-    .then(function(r){ return r.ok ? r.json() : null; });
-}
-function fsSave(path, token, data){
-  return fetch(FS_BASE+path+'?key='+FB_API_KEY, {
-    method:'PATCH',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-    body:JSON.stringify({fields:toFields(data)})
-  });
+var FS_BASE='https://firestore.googleapis.com/v1/projects/'+FB_PROJECT+'/databases/(default)/documents/';
+function fsGet(path,token){ return fetch(FS_BASE+path,{headers:{'Authorization':'Bearer '+token}}).then(function(r){return r.ok?r.json():null;}); }
+function fsSave(path,token,data){ return fetch(FS_BASE+path+'?key='+FB_API_KEY,{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({fields:toFields(data)})}); }
+function fsWrite(docPath,data){
+  if(!_token) return;
+  fsSave(docPath,_token,{events:data,updatedAt:Date.now()}).then(function(r){
+    if(!r.ok) r.text().then(function(t){console.error('fsWrite error',r.status,t);});
+  }).catch(function(e){console.error('fsWrite failed',e);});
 }
 
-function fsWrite(docPath, data) {
-  if (!_token) return;
-  fsSave(docPath, _token, {events: data, updatedAt: Date.now()})
-    .then(function(r){
-      if(!r.ok) r.text().then(function(t){ console.error('fsWrite error',r.status,t); });
-    }).catch(function(e){ console.error('fsWrite failed',e); });
-}
-
-function fsRead(docPath, cb) {
-  if (!_token) { cb(null); return; }
-  fsGet(docPath, _token).then(function(doc){
-    if(!doc||!doc.fields){ cb(null); return; }
-    var data = fromFields(doc.fields);
-    // Support both new format (data.events) and old format (eventsJson string)
-    if(data.events && Array.isArray(data.events)){
-      cb(data.events);
-    } else if(doc.fields.eventsJson && doc.fields.eventsJson.stringValue){
-      try{ cb(JSON.parse(doc.fields.eventsJson.stringValue)); }catch(e){ cb(null); }
-    } else {
-      cb(null);
-    }
-  }).catch(function(){ cb(null); });
+function fsRead(docPath,cb){
+  if(!_token){cb(null);return;}
+  fsGet(docPath,_token).then(function(doc){
+    if(!doc||!doc.fields){cb(null);return;}
+    var data=fromFields(doc.fields);
+    if(data.events&&Array.isArray(data.events)) cb(data.events);
+    else if(doc.fields.eventsJson&&doc.fields.eventsJson.stringValue){
+      try{cb(JSON.parse(doc.fields.eventsJson.stringValue));}catch(e){cb(null);}
+    } else cb(null);
+  }).catch(function(){cb(null);});
 }
 
 function isAdmin() { return _user && _user.email === ADMIN_EMAIL; }
 
-function loadFromFirestore() {
-  // Always render localStorage events first
-  render();
-  if (!_token || !_user) return;
-  var uid = btoa(_user.email).replace(/=/g,'');
-  // Load personal events first, then admin events
-  fsRead('chronos/users_' + uid, function(userEvts) {
-    fsRead('chronos/adminEvents', function(adminEvts) {
-      // Keep lunar/solar seeds from localStorage
-      var seeds = events.filter(function(e){ return e.category==='lunar'||e.category==='solar'; });
-      var personal = [];
-      if (userEvts && userEvts.length) personal = userEvts;
-      var admin = [];
-      if (adminEvts && adminEvts.length) {
-        admin = adminEvts.map(function(e){ e.isAdmin=true; e.isPublic=true; return e; });
-      }
-      // Merge: personal + admin + any seeds not already included
-      var allIds = {};
-      personal.forEach(function(e){ allIds[e.id]=true; });
-      admin.forEach(function(e){ allIds[e.id]=true; });
-      var newSeeds = seeds.filter(function(e){ return !allIds[e.id]; });
-      events = personal.concat(admin).concat(newSeeds);
-      try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(ex){}
-      showToast('\u2713 Loaded!');
+function loadFromFirestore(){
+  render(); // show localStorage immediately
+  if(!_token||!_user) return;
+  var uid=btoa(_user.email).replace(/=/g,'');
+  fsRead('chronos/users_'+uid,function(userEvts){
+    fsRead('chronos/adminEvents',function(adminEvts){
+      var seeds=events.filter(function(e){return e.category==='lunar'||e.category==='solar';});
+      var personal=userEvts&&userEvts.length?userEvts:events.filter(function(e){return e.category!=='lunar'&&e.category!=='solar'&&!e.isAdmin;});
+      var admin=[];
+      if(adminEvts&&adminEvts.length) admin=adminEvts.map(function(e){e.isAdmin=true;e.isPublic=true;return e;});
+      var allIds={};
+      personal.forEach(function(e){allIds[e.id]=true;});
+      admin.forEach(function(e){allIds[e.id]=true;});
+      var newSeeds=seeds.filter(function(e){return !allIds[e.id];});
+      events=personal.concat(admin).concat(newSeeds);
+      try{localStorage.setItem('ch4d_events',JSON.stringify(events));}catch(ex){}
+      showToast('✓ Loaded!');
       render();
     });
   });
@@ -1365,65 +1334,6 @@ document.getElementById('eventList').addEventListener('click', function(ev) {
 });
 
 
-function migrateStorage() {
-  var OLD_KEYS = ['ch_events','ch3_events','ch4_events','ch4b_events','ch4c_events','ch4d_events'];
-  var current = [];
-  try { current = JSON.parse(localStorage.getItem('ch4d_events') || '[]'); } catch(e){ current = []; }
-  var ids = {}; current.forEach(function(e){ ids[e.id]=true; });
-  OLD_KEYS.forEach(function(k){
-    var raw = localStorage.getItem(k); if (!raw) return;
-    try { JSON.parse(raw).forEach(function(e){ if (!ids[e.id]){ current.push(e); ids[e.id]=true; } }); } catch(e){}
-  });
-  try { localStorage.setItem('ch4d_events', JSON.stringify(current)); } catch(e){}
-}
-
-function goHome() {
-  initSplash();
-  var s = document.getElementById('splash');
-  s.style.display=''; s.style.opacity='0'; s.classList.remove('hidden');
-  setTimeout(function(){ s.style.opacity='1'; }, 10);
-}
-
-function copyText(text, onSuccess, onFail) {
-  var ok = false;
-  try {
-    var ta = document.createElement('textarea');
-    ta.value = text; ta.style.cssText='position:fixed;top:0;left:0;width:2px;height:2px;opacity:0;';
-    document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0,text.length);
-    ok = document.execCommand('copy'); document.body.removeChild(ta);
-  } catch(ex){ ok=false; }
-  if (ok) { if(onSuccess) onSuccess(); return; }
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(function(){ if(onSuccess) onSuccess(); }).catch(function(){ if(onFail) onFail(); });
-    return;
-  }
-  if (onFail) onFail();
-}
-
-function copyMonth(year, month, btn) {
-  var savedTime=timeFilter; timeFilter='all';
-  var allItems=getFiltered().filter(function(item){
-    return item.date.getFullYear()===year && item.date.getMonth()===month;
-  });
-  timeFilter=savedTime;
-  if (!allItems.length) return;
-  var lines=[MONTHS[month]+' '+year,''], lastDay=-1;
-  for (var i=0;i<allItems.length;i++) {
-    var item=allItems[i],e=item.ev,d=item.date;
-    if (d.getDate()!==lastDay) {
-      if (lastDay!==-1) lines.push('');
-      lines.push(DNAMES[d.getDay()]+' '+MONTHS_S[d.getMonth()]+' '+d.getDate());
-      lastDay=d.getDate();
-    }
-    lines.push('  '+stripEmoji(e.name)+(e.time?' - '+fmtTime(e.time):'')+(e.birthYear?' - turns '+(year-parseInt(e.birthYear))+' yrs':'')+(e.notes?' ('+e.notes+')':''));
-  }
-  var txt=lines.join('\n'), orig=btn?btn.textContent:'⧉';
-  copyText(txt,
-    function(){ if(btn){ btn.textContent='\u2713 Copied!'; btn.style.color='var(--gold)'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; },2000); } },
-    function(){ if(btn){ btn.textContent='\u2717 Failed'; btn.style.color='var(--red)'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; },2000); } }
-  );
-}
-
 var _editingId = null;
 function openEdit(id) {
   var e=events.filter(function(x){ return x.id===id; })[0]; if(!e) return;
@@ -1436,12 +1346,115 @@ function openEdit(id) {
   document.getElementById('mTime').value  = e.time||'';
   document.getElementById('mNotes').value = e.notes||'';
   document.getElementById('mBYear').value = e.birthYear||'';
+  var brelRow=document.getElementById('brel-row');
+  var byrRow=document.getElementById('byr-row');
+  var byrLabel=document.getElementById('byr-label');
+  if(selCat==='birthday'){
+    if(byrRow) byrRow.className='show'; if(byrLabel) byrLabel.textContent='Birth year (to show age)';
+    if(brelRow) brelRow.style.display='';
+  } else if(selCat==='anniversary'){
+    if(byrRow) byrRow.className='show'; if(byrLabel) byrLabel.textContent='Year it started';
+    if(brelRow) brelRow.style.display='none';
+  } else { if(byrRow) byrRow.className=''; if(brelRow) brelRow.style.display='none'; }
   buildCatGrid(); setRecur(selRecur); setVisibility(selVisibility); setBRel(selBRel);
-  document.getElementById('byr-row').className=(selCat==='birthday'||selCat==='anniversary')?'show':'';
   document.getElementById('lunarHint').className='lunar-hint'+(selCat==='lunar-solar'?' show':'');
   var vRow=document.getElementById('visibilityRow');
   if(vRow) vRow.style.display=isAdmin()?'block':'none';
   document.getElementById('overlay').classList.add('show');
+}
+
+
+function goHome() {
+  initSplash();
+  var s=document.getElementById('splash');
+  s.style.display=''; s.style.opacity='0'; s.classList.remove('hidden');
+  setTimeout(function(){ s.style.opacity='1'; },10);
+}
+
+function copyText(text, onSuccess, onFail) {
+  var ok=false;
+  try {
+    var ta=document.createElement('textarea');
+    ta.value=text; ta.style.cssText='position:fixed;top:0;left:0;width:2px;height:2px;opacity:0;';
+    document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0,text.length);
+    ok=document.execCommand('copy'); document.body.removeChild(ta);
+  } catch(ex){ ok=false; }
+  if(ok){ if(onSuccess) onSuccess(); return; }
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){ if(onSuccess) onSuccess(); }).catch(function(){ if(onFail) onFail(); });
+    return;
+  }
+  if(onFail) onFail();
+}
+
+function copyMonth(year, month, btn) {
+  var savedTime=timeFilter; timeFilter='all';
+  var allItems=getFiltered().filter(function(item){
+    return item.date.getFullYear()===year && item.date.getMonth()===month;
+  });
+  timeFilter=savedTime;
+  if(!allItems.length) return;
+  var lines=[MONTHS[month]+' '+year,''], lastDay=-1;
+  for(var i=0;i<allItems.length;i++){
+    var item=allItems[i],e=item.ev,d=item.date;
+    if(d.getDate()!==lastDay){
+      if(lastDay!==-1) lines.push('');
+      lines.push(DNAMES[d.getDay()]+' '+MONTHS_S[d.getMonth()]+' '+d.getDate());
+      lastDay=d.getDate();
+    }
+    lines.push('  '+stripEmoji(e.name)+(e.time&&(e.category==='lunar'||e.category==='solar')?' - '+fmtTime(e.time):'')+(e.birthYear?' (b. '+e.birthYear+')':'')+(e.notes?' ('+e.notes+')':''));
+  }
+  var txt=lines.join('\n'), orig=btn?btn.textContent:'⧉';
+  copyText(txt,
+    function(){ if(btn){ btn.textContent='\u2713 Copied!'; btn.style.color='var(--gold)'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; },2000); } },
+    function(){ if(btn){ btn.textContent='\u2717 Failed'; btn.style.color='red'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; },2000); } }
+  );
+}
+
+
+function exportData(){
+  var personal=events.filter(function(e){return e.category!=='lunar'&&e.category!=='solar';});
+  var rows=['id,name,date,time,category,recur,notes,birthYear,bRel,isPublic'];
+  personal.forEach(function(e){
+    rows.push([e.id||'',e.name||'',e.date||'',e.time||'',e.category||'',e.recur||'once',(e.notes||'').replace(/,/g,';'),e.birthYear||'',e.bRel||'',e.isPublic?'true':'false'].map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(','));
+  });
+  var csv=rows.join('\n');
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='chronos-backup-'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  showToast('✓ Exported '+personal.length+' events!');
+}
+function importData(input){
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var lines=e.target.result.split('\n').filter(function(l){return l.trim();});
+      if(lines.length<2){showToast('Empty file');return;}
+      var headers=lines[0].replace(/"/g,'').split(',');
+      var existingIds={};
+      events.forEach(function(ev){existingIds[ev.id]=true;});
+      var added=0;
+      for(var i=1;i<lines.length;i++){
+        var vals=lines[i].match(/("(?:[^"]|"")*"|[^,]*)/g)||[];
+        vals=vals.filter(function(v,idx){return idx%2===0;}).map(function(v){return v.replace(/^"|"$/g,'').replace(/""/g,'"');});
+        var ev={};
+        headers.forEach(function(h,hi){ev[h.trim()]=vals[hi]||'';});
+        if(!ev.name||!ev.date) continue;
+        if(!ev.id) ev.id='i'+Date.now()+i;
+        if(existingIds[ev.id]) continue;
+        if(ev.isPublic) ev.isPublic=ev.isPublic==='true';
+        events.push(ev); existingIds[ev.id]=true; added++;
+      }
+      try{localStorage.setItem('ch4d_events',JSON.stringify(events));}catch(ex){}
+      if(_token&&_user) syncNow();
+      render();
+      showToast('✓ Imported '+added+' events!');
+    }catch(ex){showToast('Import failed');}
+  };
+  reader.readAsText(file);
+  input.value='';
 }
 
 
@@ -1452,7 +1465,7 @@ function showCalView() {
   var cv=document.getElementById('calView');
   var el=document.getElementById('eventList');
   var tab=document.getElementById('calTab');
-  if (cv.style.display!=='none') {
+  if(cv.style.display!=='none'){
     cv.style.display='none'; el.style.display='';
     if(tab) tab.classList.remove('on'); return;
   }
@@ -1466,13 +1479,13 @@ function renderCalView() {
   if(!cv||cv.style.display==='none') return;
   var y=_calDate.getFullYear(), m=_calDate.getMonth();
   var today=today0();
-  var moonMap={}, nameMap={}, phaseList=[];
-  events.forEach(function(e) {
+  var moonMap={},nameMap={},phaseList=[];
+  events.forEach(function(e){
     if(e.category!=='lunar'&&e.category!=='solar') return;
     var d=new Date(e.date+'T00:00:00');
     if(d.getFullYear()!==y||d.getMonth()!==m) return;
     var icon=e.name.indexOf('🌑')>=0?'🌑':e.name.indexOf('🌓')>=0?'🌓':e.name.indexOf('🌕')>=0?'🌕':e.name.indexOf('🌗')>=0?'🌗':e.name.indexOf('🌸')>=0?'🌸':e.name.indexOf('☀️')>=0?'☀️':e.name.indexOf('🍂')>=0?'🍂':e.name.indexOf('❄️')>=0?'❄️':'';
-    if(icon){ var cn=stripEmoji(e.name); moonMap[d.getDate()]=icon; nameMap[d.getDate()]=cn; phaseList.push({day:d.getDate(),icon:icon,name:cn,notes:e.notes||''}); }
+    if(icon){var cn=stripEmoji(e.name);moonMap[d.getDate()]=icon;nameMap[d.getDate()]=cn;phaseList.push({day:d.getDate(),icon:icon,name:cn,notes:e.notes||''});}
   });
   phaseList.sort(function(a,b){return a.day-b.day;});
   var evMap={};
@@ -1487,7 +1500,7 @@ function renderCalView() {
   var html='<div class="cal-nav"><button class="cal-nav-btn" onclick="calMove(-1)">‹</button><div class="cal-month-title">'+MONTHS[m]+' '+y+'</div><button class="cal-nav-btn" onclick="calMove(1)">›</button></div>';
   html+='<div class="cal-grid">';
   ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(function(d){html+='<div class="cal-dow">'+d+'</div>';});
-  var first=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(), prev=new Date(y,m,0).getDate();
+  var first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),prev=new Date(y,m,0).getDate();
   for(var p=first-1;p>=0;p--) html+='<div class="cal-day other-month"><span class="cal-num">'+(prev-p)+'</span></div>';
   for(var day=1;day<=days;day++){
     var isT=new Date(y,m,day).getTime()===today.getTime();
@@ -1515,140 +1528,12 @@ function renderCalView() {
 
 function calMove(dir){_calDate.setMonth(_calDate.getMonth()+dir);renderCalView();}
 
-
-function exportData() {
-  var personal = events.filter(function(e){ return e.category!=='lunar'&&e.category!=='solar'; });
-  var rows = ['id,name,date,time,category,recur,notes,birthYear,bRel,isPublic'];
-  personal.forEach(function(e) {
-    var row = [
-      e.id||'', e.name||'', e.date||'', e.time||'', e.category||'',
-      e.recur||'once', (e.notes||'').replace(/,/g,';'),
-      e.birthYear||'', e.bRel||'', e.isPublic?'true':'false'
-    ].map(function(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }).join(',');
-    rows.push(row);
-  });
-  var csv = rows.join('\n');
-  var blob = new Blob([csv], {type:'text/csv'});
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = 'chronos-backup-' + new Date().toISOString().slice(0,10) + '.csv';
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(url);
-  showToast('\u2713 Exported ' + personal.length + ' events!');
-}
-
-function importData(input) {
-  var file = input.files[0]; if (!file) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      var lines = e.target.result.split('\n').filter(function(l){ return l.trim(); });
-      if (lines.length < 2) { showToast('Empty file'); return; }
-      var headers = lines[0].replace(/"/g,'').split(',');
-      var existingIds = {};
-      events.forEach(function(ev){ existingIds[ev.id]=true; });
-      var added = 0;
-      for (var i=1; i<lines.length; i++) {
-        var vals = lines[i].match(/("(?:[^"]|"")*"|[^,]*)/g)||[];
-        vals = vals.filter(function(v,idx){ return idx%2===0; }).map(function(v){ return v.replace(/^"|"$/g,'').replace(/""/g,'"'); });
-        var ev = {};
-        headers.forEach(function(h,hi){ ev[h.trim()] = vals[hi]||''; });
-        if (!ev.name||!ev.date) continue;
-        if (!ev.id) ev.id = 'i'+Date.now()+i;
-        if (existingIds[ev.id]) continue;
-        if (ev.birthYear) ev.birthYear = ev.birthYear;
-        if (ev.isPublic) ev.isPublic = ev.isPublic==='true';
-        events.push(ev);
-        existingIds[ev.id]=true;
-        added++;
-      }
-      try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(ex){}
-      if (_token && _user) syncNow();
-      render();
-      showToast('\u2713 Imported ' + added + ' events!');
-    } catch(ex) { showToast('Import failed: ' + ex.message); }
-  };
-  reader.readAsText(file);
-  input.value = '';
-}
-
-
-var _unsubscribe = null;
-var _lastUpdatedAt = 0;
-
-function startRealtime() {
-  if (!_token || !_user) return;
-  stopRealtime();
-  var uid = btoa(_user.email).replace(/=/g,'');
-
-  // Load Firebase SDK dynamically (safe — app already rendered)
-  if (typeof firebase !== 'undefined' && firebase.firestore) {
-    subscribeSnapshot(uid); return;
-  }
-  var loaded = 0;
-  ['firebase-app-compat','firebase-firestore-compat'].forEach(function(name){
-    var s = document.createElement('script');
-    s.src = 'https://www.gstatic.com/firebasejs/10.12.0/'+name+'.js';
-    s.onload = function(){
-      loaded++;
-      if (loaded === 2) {
-        try {
-          var cfg = {apiKey:FB_API_KEY, projectId:FB_PROJECT,
-            authDomain:FB_PROJECT+'.firebaseapp.com',
-            appId:'1:55277159527:web:90abfdf1c812a7707680c2'};
-          if (!firebase.apps.length) firebase.initializeApp(cfg);
-          subscribeSnapshot(uid);
-        } catch(e) { fallbackPolling(uid); }
-      }
-    };
-    s.onerror = function(){ fallbackPolling(uid); };
-    document.body.appendChild(s);
-  });
-}
-
-function subscribeSnapshot(uid) {
-  var db = firebase.firestore();
-  _unsubscribe = db.collection('chronos').doc('users_'+uid).onSnapshot(function(doc){
-    if (!doc.exists) return;
-    var data = doc.data();
-    if (!data || !data.events) return;
-    var cloudTime = data.updatedAt || 0;
-    if (cloudTime > _lastUpdatedAt) {
-      _lastUpdatedAt = cloudTime;
-      var seeds = events.filter(function(e){ return e.category==='lunar'||e.category==='solar'; });
-      var personal = data.events;
-      var allIds = {}; personal.forEach(function(e){ allIds[e.id]=true; });
-      var newSeeds = seeds.filter(function(e){ return !allIds[e.id]; });
-      events = personal.concat(newSeeds);
-      try { localStorage.setItem('ch4d_events', JSON.stringify(events)); } catch(ex){}
-      render();
-      showToast('\u2713 Synced!');
-    }
-  }, function(){ fallbackPolling(uid); });
-}
-
-function fallbackPolling(uid) {
-  _unsubscribe = setInterval(function(){
-    if (!_token || !_user) { stopRealtime(); return; }
-    loadFromFirestore();
-  }, 15000);
-}
-
-function stopRealtime() {
-  if (_unsubscribe) {
-    if (typeof _unsubscribe === 'function') _unsubscribe();
-    else clearInterval(_unsubscribe);
-    _unsubscribe = null;
-  }
-}
-
 // ── INIT ─────────────────────────────────────────────
 migrateStorage();
 loadTheme();
 loadEvents();
 seedLunar();
-
+initSplash();
 
 // Wire month sheet buttons after full DOM load
 window.addEventListener('load', function() {
