@@ -891,11 +891,16 @@ function render() {
       var icon=e.category==='lunar'?(e.name.indexOf('🌑')>=0?'🌑':e.name.indexOf('🌓')>=0?'🌓':e.name.indexOf('🌕')>=0?'🌕':e.name.indexOf('🌗')>=0?'🌗':'🌙'):e.category==='solar'?(e.name.indexOf('🌸')>=0?'🌸':e.name.indexOf('☀️')>=0?'☀️':e.name.indexOf('🍂')>=0?'🍂':e.name.indexOf('❄️')>=0?'❄️':'☀️'):cat.label.split(' ')[0];
       var showTime=(e.category==='lunar'||e.category==='solar'); var dateStr=DNAMES[d.getDay()]+' · '+MONTHS_S[d.getMonth()]+' '+d.getDate()+(e.birthYear?' ― b. '+e.birthYear:'')+(showTime&&e.time?' · '+fmtTime(e.time):'');
       var cdClass='ev-cd'+(isToday?' today':diff<0?' past':'');
-      var cdText=isToday?'🎉 Today':diff>0?diff+' day'+(diff>1?'s':'')+' left':Math.abs(diff)+' day'+(Math.abs(diff)>1?'s':'')+' ago';
+      var ageStr='';
+      if(e.birthYear){ var age=mg.y-parseInt(e.birthYear); var lbl=e.category==='anniversary'?'years':'turns'; ageStr=(e.category==='anniversary'?age+' '+lbl:lbl+' '+age); }
+      var cdText=isToday?'🎉 Today':ageStr?ageStr:(diff>0?diff+' day'+(diff>1?'s':'')+' left':Math.abs(diff)+' day'+(Math.abs(diff)>1?'s':'')+' ago');
       var rightHtml='';
-      if(e.birthYear){var age=mg.y-parseInt(e.birthYear);var lbl=e.category==='anniversary'?'years':'turns';rightHtml='<div class="ev-right"><div class="ev-turns">'+lbl+'</div><div class="ev-age">'+age+'</div></div>';}
-      else if(isToday){rightHtml='<div class="ev-right"><div style="font-size:26px">🎉</div></div>';}
-      else{var col=diff>=0?'var(--text)':'var(--dim)';rightHtml='<div class="ev-right"><div class="ev-dnum" style="color:'+col+'">'+Math.abs(diff)+'</div><div class="ev-dlbl">'+(diff>=0?'days left':'days ago')+'</div></div>';}
+      if(isToday){
+        rightHtml='<div class="ev-right"><div style="font-size:26px">🎉</div></div>';
+      } else {
+        var col=diff>=0?'var(--text)':'var(--dim)';
+        rightHtml='<div class="ev-right"><div class="ev-dnum" style="color:'+col+'">'+Math.abs(diff)+'</div><div class="ev-dlbl">'+(diff>=0?'days left':'days ago')+'</div></div>';
+      }
       html+='<div class="event-item'+(isToday?' today-item':'')+'" onclick="openEdit(\''+e.id+'\')">' +
         '<div class="ev-avatar" style="background:var(--bg3)">'+icon+'</div>' +
         '<div class="ev-info"><div class="ev-name">'+stripEmoji(e.name)+'</div>'+(e.bRel?'<div class="ev-rel">'+(e.bRel==='family'?'👨‍👩‍👧 Family':'👫 Friend')+'</div>':'')+'<div class="ev-date">'+dateStr+'</div>'+(e.notes?'<div class="ev-sub">'+e.notes+'</div>':'')+'<div class="'+cdClass+'">'+cdText+'</div></div>' +
@@ -1661,94 +1666,4 @@ seedLunar();
   ['firebase-app-compat','firebase-firestore-compat'].forEach(function(name){
     var s=document.createElement('script');
     s.src='https://www.gstatic.com/firebasejs/10.12.0/'+name+'.js';
-    s.onload=function(){
-      loaded++;
-      if(loaded===2){
-        try{
-          if(!firebase.apps.length){
-            firebase.initializeApp({
-              apiKey:FB_API_KEY,
-              projectId:FB_PROJECT,
-              authDomain:FB_PROJECT+'.firebaseapp.com',
-              appId:'1:55277159527:web:90abfdf1c812a7707680c2'
-            });
-          }
-          window._firebaseReady=true;
-        }catch(e){}
-      }
-    };
-    document.body.appendChild(s);
-  });
-})();
-initSplash();
-
-// Wire month sheet buttons after full DOM load
-window.addEventListener('load', function() {
-document.getElementById('monthCopyBtn').onclick = function() {
-  var txt = buildMonthText(_monthSheetYear, _monthSheetMonth);
-  if (!txt) { closeMonthSheet(); return; }
-  var btn = document.getElementById('monthCopyBtn');
-  var orig = btn.textContent;
-  copyText(txt,
-    function() { btn.textContent='\u2713 Copied!'; btn.style.color='#c9a84c'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; closeMonthSheet(); },1500); },
-    function() { btn.textContent='\u2717 Failed';  btn.style.color='#f87171'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; },2000); }
-  );
-};
-document.getElementById('monthShareBtn').onclick = function() {
-  var txt = buildMonthText(_monthSheetYear, _monthSheetMonth);
-  if (!txt) { closeMonthSheet(); return; }
-  if (navigator.share) {
-    navigator.share({ title: MONTHS[_monthSheetMonth]+' '+_monthSheetYear, text: txt })
-      .then(function(){ closeMonthSheet(); }).catch(function(){});
-  } else {
-    document.getElementById('monthCopyBtn').click();
-  }
-};
-}); // end window.onload
-
-
-// Desktop: regular click
-document.getElementById('eventList').addEventListener('click', function(ev) {
-  var btn = ev.target;
-  if (btn && btn.classList && btn.classList.contains('month-copy-btn')) {
-    if (!('ontouchstart' in window)) {
-      copyMonth(parseInt(btn.getAttribute('data-year')), parseInt(btn.getAttribute('data-month')), btn);
-    }
-  }
-});
-
-// Show sign-in screen by default, restore session if available
-document.getElementById('app').style.display = 'none';
-if (!restoreSession()) {
-  document.getElementById('signinScreen').classList.remove('hidden');
-}
-</script>
-<div id="toast" style="position:fixed;bottom:100px;left:50%;transform:translateX(-50%);top:auto;background:#1a2a4a;border:2px solid #c9a84c;color:#c9a84c;padding:12px 28px;border-radius:40px;font-size:15px;font-weight:700;z-index:999999;pointer-events:none;opacity:0;transition:opacity 0.3s;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,0.5)"></div>
-
-<!-- EVENT ACTION SHEET -->
-<div id="actionSheet" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.7);" onclick="closeActionSheet()">
-  <div style="position:absolute;bottom:0;left:0;right:0;background:var(--bg2);border-radius:16px 16px 0 0;padding:1.25rem;max-width:600px;margin:0 auto;" onclick="event.stopPropagation()">
-    <div id="asTitle" style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;"></div>
-    <div id="asMeta" style="font-size:12px;color:var(--muted);margin-bottom:1.25rem;line-height:1.5;"></div>
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <button onclick="startEditEvent()" style="padding:12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:14px;cursor:pointer;text-align:left;">✏️ Edit</button>
-      <button onclick="deleteEventFromSheet()" style="padding:12px;border-radius:8px;border:1px solid var(--red);background:transparent;color:var(--red);font-family:inherit;font-size:14px;cursor:pointer;text-align:left;">🗑️ Delete</button>
-      <button onclick="closeActionSheet()" style="padding:12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;font-size:14px;cursor:pointer;text-align:left;">Cancel</button>
-    </div>
-  </div>
-</div>
-
-<!-- MONTH ACTION SHEET -->
-<div id="monthSheet" style="display:none;position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,0.7);" onclick="closeMonthSheet()">
-  <div style="position:absolute;bottom:0;left:0;right:0;max-width:600px;margin:0 auto;background:var(--bg2);border-radius:16px 16px 0 0;padding:1.5rem;" onclick="event.stopPropagation()">
-    <div id="monthSheetTitle" style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:1.25rem;text-align:center;"></div>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <button id="monthCopyBtn" style="padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:'Open Sans',sans-serif;font-size:15px;cursor:pointer;touch-action:manipulation;">⧉ Copy to clipboard</button>
-      <button id="monthShareBtn" style="padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:'Open Sans',sans-serif;font-size:15px;cursor:pointer;touch-action:manipulation;">↑ Share</button>
-      <button onclick="closeMonthSheet()" style="padding:12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Open Sans',sans-serif;font-size:14px;cursor:pointer;">Cancel</button>
-    </div>
-  </div>
-</div>
-
-</body>
-</html>
+    s.onload=fun
