@@ -10,7 +10,7 @@
 <title>ChronosCalendar.app</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%230f0c29'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='35%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23cbd5e1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='200' cy='200' r='200' fill='url(%23a)'/%3E%3Ccircle cx='200' cy='200' r='185' fill='none' stroke='%23f59e0b' stroke-width='6' opacity='0.6'/%3E%3Ccircle cx='200' cy='185' r='100' fill='url(%23b)'/%3E%3Ccircle cx='245' cy='168' r='88' fill='url(%23a)'/%3E%3Ccircle cx='148' cy='103' r='8' fill='%23fde68a'/%3E%3Ccircle cx='310' cy='130' r='9' fill='%23fde68a' opacity='0.9'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%230f0c29'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='35%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23cbd5e1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='200' cy='200' r='200' fill='url(%23a)'/%3E%3Ccircle cx='200' cy='200' r='185' fill='none' stroke='%23f59e0b' stroke-width='6' opacity='0.6'/%3E%3Ccircle cx='200' cy='185' r='100' fill='url(%23b)'/%3E%3Ccircle cx='245' cy='168' r='88' fill='url(%23a)'/%3E%3Ccircle cx='148' cy='103' r='8' fill='%23fde68a'/%3E%3Ccircle cx='310' cy='130' r='9' fill='%23fde68a' opacity='0.9'/%3E%3C/svg%3E">
-<script src="https://accounts.google.com/gsi/client?v=1780652428"></script>
+<script src="https://accounts.google.com/gsi/client?v=1780784709"></script>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
@@ -1298,7 +1298,7 @@ function startEditEvent() {
   document.getElementById('mTime').value = e.time || '';
   document.getElementById('mNotes').value = e.notes || '';
   document.getElementById('mBYear').value = e.birthYear || '';
-  buildCatGrid(); setRecur(selRecur); setVisibility(selVisibility); setBRel(selBRel);
+  buildCatGrid(); setRecur(selRecur); setBRel(selBRel); setVisibility(selVisibility);
   document.getElementById('byr-row').className = (selCat==='birthday') ? 'show' : '';
   document.getElementById('lunarHint').className = 'lunar-hint' + (selCat==='lunar-solar' ? ' show' : '');
   var vRow = document.getElementById('visibilityRow');
@@ -1414,10 +1414,12 @@ function openEdit(id) {
     if(byrRow) byrRow.className='show'; if(byrLabel) byrLabel.textContent='Year it started';
     if(brelRow) brelRow.style.display='none';
   } else { if(byrRow) byrRow.className=''; if(brelRow) brelRow.style.display='none'; }
-  buildCatGrid(); setRecur(selRecur); setVisibility(selVisibility); setBRel(selBRel);
+  buildCatGrid(); setRecur(selRecur); setBRel(selBRel); setVisibility(selVisibility);
   document.getElementById('lunarHint').className='lunar-hint'+(selCat==='lunar-solar'?' show':'');
   var vRow=document.getElementById('visibilityRow');
   if(vRow) vRow.style.display=isAdmin()?'block':'none';
+  // Re-apply visibility after showing row so buttons reflect current state
+  setVisibility(selVisibility);
   document.getElementById('overlay').classList.add('show');
 }
 
@@ -1662,98 +1664,4 @@ loadEvents();
 seedLunar();
 // Preload Firebase SDK immediately so it's ready when user signs in
 (function(){
-  var loaded=0;
-  ['firebase-app-compat','firebase-firestore-compat'].forEach(function(name){
-    var s=document.createElement('script');
-    s.src='https://www.gstatic.com/firebasejs/10.12.0/'+name+'.js';
-    s.onload=function(){
-      loaded++;
-      if(loaded===2){
-        try{
-          if(!firebase.apps.length){
-            firebase.initializeApp({
-              apiKey:FB_API_KEY,
-              projectId:FB_PROJECT,
-              authDomain:FB_PROJECT+'.firebaseapp.com',
-              appId:'1:55277159527:web:90abfdf1c812a7707680c2'
-            });
-          }
-          window._firebaseReady=true;
-        }catch(e){}
-      }
-    };
-    document.body.appendChild(s);
-  });
-})();
-initSplash();
-
-// Wire month sheet buttons after full DOM load
-window.addEventListener('load', function() {
-document.getElementById('monthCopyBtn').onclick = function() {
-  var txt = buildMonthText(_monthSheetYear, _monthSheetMonth);
-  if (!txt) { closeMonthSheet(); return; }
-  var btn = document.getElementById('monthCopyBtn');
-  var orig = btn.textContent;
-  copyText(txt,
-    function() { btn.textContent='\u2713 Copied!'; btn.style.color='#c9a84c'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; closeMonthSheet(); },1500); },
-    function() { btn.textContent='\u2717 Failed';  btn.style.color='#f87171'; setTimeout(function(){ btn.textContent=orig; btn.style.color=''; },2000); }
-  );
-};
-document.getElementById('monthShareBtn').onclick = function() {
-  var txt = buildMonthText(_monthSheetYear, _monthSheetMonth);
-  if (!txt) { closeMonthSheet(); return; }
-  if (navigator.share) {
-    navigator.share({ title: MONTHS[_monthSheetMonth]+' '+_monthSheetYear, text: txt })
-      .then(function(){ closeMonthSheet(); }).catch(function(){});
-  } else {
-    document.getElementById('monthCopyBtn').click();
-  }
-};
-}); // end window.onload
-
-
-// Desktop: regular click
-document.getElementById('eventList').addEventListener('click', function(ev) {
-  var btn = ev.target;
-  if (btn && btn.classList && btn.classList.contains('month-copy-btn')) {
-    if (!('ontouchstart' in window)) {
-      copyMonth(parseInt(btn.getAttribute('data-year')), parseInt(btn.getAttribute('data-month')), btn);
-    }
-  }
-});
-
-// Show sign-in screen by default, restore session if available
-document.getElementById('app').style.display = 'none';
-if (!restoreSession()) {
-  document.getElementById('signinScreen').classList.remove('hidden');
-}
-</script>
-<div id="toast" style="position:fixed;bottom:100px;left:50%;transform:translateX(-50%);top:auto;background:#1a2a4a;border:2px solid #c9a84c;color:#c9a84c;padding:12px 28px;border-radius:40px;font-size:15px;font-weight:700;z-index:999999;pointer-events:none;opacity:0;transition:opacity 0.3s;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,0.5)"></div>
-
-<!-- EVENT ACTION SHEET -->
-<div id="actionSheet" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.7);" onclick="closeActionSheet()">
-  <div style="position:absolute;bottom:0;left:0;right:0;background:var(--bg2);border-radius:16px 16px 0 0;padding:1.25rem;max-width:600px;margin:0 auto;" onclick="event.stopPropagation()">
-    <div id="asTitle" style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;"></div>
-    <div id="asMeta" style="font-size:12px;color:var(--muted);margin-bottom:1.25rem;line-height:1.5;"></div>
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <button onclick="startEditEvent()" style="padding:12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:14px;cursor:pointer;text-align:left;">✏️ Edit</button>
-      <button onclick="deleteEventFromSheet()" style="padding:12px;border-radius:8px;border:1px solid var(--red);background:transparent;color:var(--red);font-family:inherit;font-size:14px;cursor:pointer;text-align:left;">🗑️ Delete</button>
-      <button onclick="closeActionSheet()" style="padding:12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;font-size:14px;cursor:pointer;text-align:left;">Cancel</button>
-    </div>
-  </div>
-</div>
-
-<!-- MONTH ACTION SHEET -->
-<div id="monthSheet" style="display:none;position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,0.7);" onclick="closeMonthSheet()">
-  <div style="position:absolute;bottom:0;left:0;right:0;max-width:600px;margin:0 auto;background:var(--bg2);border-radius:16px 16px 0 0;padding:1.5rem;" onclick="event.stopPropagation()">
-    <div id="monthSheetTitle" style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:1.25rem;text-align:center;"></div>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <button id="monthCopyBtn" style="padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:'Open Sans',sans-serif;font-size:15px;cursor:pointer;touch-action:manipulation;">⧉ Copy to clipboard</button>
-      <button id="monthShareBtn" style="padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:'Open Sans',sans-serif;font-size:15px;cursor:pointer;touch-action:manipulation;">↑ Share</button>
-      <button onclick="closeMonthSheet()" style="padding:12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Open Sans',sans-serif;font-size:14px;cursor:pointer;">Cancel</button>
-    </div>
-  </div>
-</div>
-
-</body>
-</html>
+  var loaded=0
