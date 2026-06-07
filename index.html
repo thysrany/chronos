@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v38 -->
+<!-- v47 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ChronosCalendar.app</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%230f0c29'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='35%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23cbd5e1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='200' cy='200' r='200' fill='url(%23a)'/%3E%3Ccircle cx='200' cy='200' r='185' fill='none' stroke='%23f59e0b' stroke-width='6' opacity='0.6'/%3E%3Ccircle cx='200' cy='185' r='100' fill='url(%23b)'/%3E%3Ccircle cx='245' cy='168' r='88' fill='url(%23a)'/%3E%3Ccircle cx='148' cy='103' r='8' fill='%23fde68a'/%3E%3Ccircle cx='310' cy='130' r='9' fill='%23fde68a' opacity='0.9'/%3E%3C/svg%3E">
@@ -892,15 +892,12 @@ function render() {
       var showTime=(e.category==='lunar'||e.category==='solar'); var dateStr=DNAMES[d.getDay()]+' · '+MONTHS_S[d.getMonth()]+' '+d.getDate()+(e.birthYear?' ― b. '+e.birthYear:'')+(showTime&&e.time?' · '+fmtTime(e.time):'');
       var cdClass='ev-cd'+(isToday?' today':diff<0?' past':'');
       var ageStr='';
-      if(e.birthYear){ var age=mg.y-parseInt(e.birthYear); var lbl=e.category==='anniversary'?'years':'turns'; ageStr=(e.category==='anniversary'?age+' '+lbl:lbl+' '+age); }
+      if(e.birthYear){var age2=mg.y-parseInt(e.birthYear);var lbl2=e.category==='anniversary'?age2+' years':'turns '+age2;ageStr=lbl2;}
       var cdText=isToday?'🎉 Today':ageStr?ageStr:(diff>0?diff+' day'+(diff>1?'s':'')+' left':Math.abs(diff)+' day'+(Math.abs(diff)>1?'s':'')+' ago');
       var rightHtml='';
-      if(isToday){
-        rightHtml='<div class="ev-right"><div style="font-size:26px">🎉</div></div>';
-      } else {
-        var col=diff>=0?'var(--text)':'var(--dim)';
-        rightHtml='<div class="ev-right"><div class="ev-dnum" style="color:'+col+'">'+Math.abs(diff)+'</div><div class="ev-dlbl">'+(diff>=0?'days left':'days ago')+'</div></div>';
-      }
+      if(isToday){rightHtml='<div class="ev-right"><div style="font-size:26px">🎉</div></div>';}
+      else{var col=diff>=0?'var(--text)':'var(--dim)';rightHtml='<div class="ev-right"><div class="ev-dnum" style="color:'+col+'">'+Math.abs(diff)+'</div><div class="ev-dlbl">'+(diff>=0?'days left':'days ago')+'</div></div>';}
+
       html+='<div class="event-item'+(isToday?' today-item':'')+'" onclick="openEdit(\''+e.id+'\')">' +
         '<div class="ev-avatar" style="background:var(--bg3)">'+icon+'</div>' +
         '<div class="ev-info"><div class="ev-name">'+stripEmoji(e.name)+'</div>'+(e.bRel?'<div class="ev-rel">'+(e.bRel==='family'?'👨‍👩‍👧 Family':'👫 Friend')+'</div>':'')+'<div class="ev-date">'+dateStr+'</div>'+(e.notes?'<div class="ev-sub">'+e.notes+'</div>':'')+'<div class="'+cdClass+'">'+cdText+'</div></div>' +
@@ -986,7 +983,7 @@ function saveEvent(){
     category:selCat, recur:selRecur,
     notes:document.getElementById('mNotes').value.trim(),
     birthYear:document.getElementById('mBYear').value||null,
-    bRel:(selCat==='birthday'||selCat==='birthday-family'||selCat==='birthday-friends')?selBRel:null,
+    bRel:selCat==='birthday'?selBRel:null,
     isAdmin: isAdmin(),
     isPublic: isAdmin() ? (selVisibility==='public') : false
   };
@@ -1218,7 +1215,7 @@ function saveEvent() {
   if(!name){alert('Please enter an event name.');return;}
   if(!date){alert('Please select a date.');return;}
   var ev = {
-    id:'u'+Date.now(), name:name, date:date,
+    id: _editingId || ('u'+Date.now()), name:name, date:date,
     time:document.getElementById('mTime').value,
     category:selCat, recur:selRecur,
     notes:document.getElementById('mNotes').value.trim(),
@@ -1298,7 +1295,9 @@ function startEditEvent() {
   document.getElementById('mTime').value = e.time || '';
   document.getElementById('mNotes').value = e.notes || '';
   document.getElementById('mBYear').value = e.birthYear || '';
-  buildCatGrid(); setRecur(selRecur); setBRel(selBRel); setVisibility(selVisibility);
+  buildCatGrid(); setRecur(selRecur); setBRel(selBRel);
+  var vRow2=document.getElementById('visibilityRow'); if(vRow2) vRow2.style.display=isAdmin()?'block':'none';
+  setVisibility(selVisibility);
   document.getElementById('byr-row').className = (selCat==='birthday') ? 'show' : '';
   document.getElementById('lunarHint').className = 'lunar-hint' + (selCat==='lunar-solar' ? ' show' : '');
   var vRow = document.getElementById('visibilityRow');
@@ -1414,12 +1413,12 @@ function openEdit(id) {
     if(byrRow) byrRow.className='show'; if(byrLabel) byrLabel.textContent='Year it started';
     if(brelRow) brelRow.style.display='none';
   } else { if(byrRow) byrRow.className=''; if(brelRow) brelRow.style.display='none'; }
-  buildCatGrid(); setRecur(selRecur); setBRel(selBRel); setVisibility(selVisibility);
+  buildCatGrid(); setRecur(selRecur); setBRel(selBRel);
+  var vRow2=document.getElementById('visibilityRow'); if(vRow2) vRow2.style.display=isAdmin()?'block':'none';
+  setVisibility(selVisibility);
   document.getElementById('lunarHint').className='lunar-hint'+(selCat==='lunar-solar'?' show':'');
   var vRow=document.getElementById('visibilityRow');
   if(vRow) vRow.style.display=isAdmin()?'block':'none';
-  // Re-apply visibility after showing row so buttons reflect current state
-  setVisibility(selVisibility);
   document.getElementById('overlay').classList.add('show');
 }
 
@@ -1665,4 +1664,4 @@ seedLunar();
 // Preload Firebase SDK immediately so it's ready when user signs in
 (function(){
   var loaded=0;
-  ['firebas
+  ['firebase-app-comp
