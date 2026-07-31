@@ -5,7 +5,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- v62 -->
+<!-- v64 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ChronosCalendar.app</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%231e1b4b'/%3E%3Cstop offset='100%25' stop-color='%230f0c29'/%3E%3C/radialGradient%3E%3CradialGradient id='b' cx='40%25' cy='35%25' r='55%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23cbd5e1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='200' cy='200' r='200' fill='url(%23a)'/%3E%3Ccircle cx='200' cy='200' r='185' fill='none' stroke='%23f59e0b' stroke-width='6' opacity='0.6'/%3E%3Ccircle cx='200' cy='185' r='100' fill='url(%23b)'/%3E%3Ccircle cx='245' cy='168' r='88' fill='url(%23a)'/%3E%3Ccircle cx='148' cy='103' r='8' fill='%23fde68a'/%3E%3Ccircle cx='310' cy='130' r='9' fill='%23fde68a' opacity='0.9'/%3E%3C/svg%3E">
@@ -1139,13 +1139,12 @@ function fromVal(v){
 }
 var FS_BASE='https://firestore.googleapis.com/v1/projects/'+FB_PROJECT+'/databases/(default)/documents/';
 function fsGet(path,token){ return fetch(FS_BASE+path,{headers:{'Authorization':'Bearer '+token}}).then(function(r){return r.ok?r.json():null;}); }
-function fsSave(path,token,data){ return fetch(FS_BASE+path+'?key='+FB_API_KEY,{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({fields:toFields(data)})}); }
+function fsSave(path,token,data){ return fetch(FS_BASE+path,{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({fields:toFields(data)})}); }
 function fsWrite(docPath,data){
-  if(!_token){ showToast('No token!'); return; }
+  if(!_token) return;
   fsSave(docPath,_token,{events:data,updatedAt:Date.now()}).then(function(r){
-    if(r.ok){ showToast('\u2713 '+docPath+' ('+data.length+')'); }
-    else r.text().then(function(t){ showToast('ERR '+r.status+' '+docPath); console.error(t); });
-  }).catch(function(e){ showToast('FAIL: '+e.message); });
+    if(!r.ok) r.text().then(function(t){console.error('fsWrite error',r.status,t);});
+  }).catch(function(e){console.error('fsWrite failed',e);});
 }
 
 function fsRead(docPath,cb){
@@ -1171,7 +1170,6 @@ function loadFromFirestore(){
       var seeds=events.filter(function(e){return e.category==='lunar'||e.category==='solar';});
       var personal=userEvts&&userEvts.length?userEvts:events.filter(function(e){return e.category!=='lunar'&&e.category!=='solar'&&!e.isAdmin;});
       var admin=[];
-      showToast('adminEvts: '+(adminEvts?adminEvts.length:'null'));
       if(adminEvts&&adminEvts.length) admin=adminEvts.map(function(e){e.isAdmin=true;e.isPublic=true;return e;});
       // Admin/public events take priority — remove from personal if same id exists in admin
       var adminIds={};
